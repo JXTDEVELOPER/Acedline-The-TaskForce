@@ -33,7 +33,8 @@ import { TaskForm } from "./components/TaskForm";
 import { TaskItem } from "./components/TaskItem";
 import { RegistrationPage } from "./components/RegistrationPage";
 import { RegistrationFormBuilder } from "./components/RegistrationFormBuilder";
-import { LogOut, CalendarCheck2, LayoutList, RefreshCcw, AlertTriangle, Calendar, Sun, Moon, Menu, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { SelfDirectedActivityDashboard } from "./components/SelfDirectedActivityDashboard";
+import { LogOut, CalendarCheck2, LayoutList, RefreshCcw, AlertTriangle, Calendar, Sun, Moon, Menu, X, ChevronLeft, ChevronRight, Target } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 
 export default function App() {
@@ -48,6 +49,7 @@ export default function App() {
   const [registerTaskId, setRegisterTaskId] = useState<string | null>(null);
   const [taskToManageRegistration, setTaskToManageRegistration] = useState<Task | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [activeView, setActiveView] = useState<"event-management" | "self-directed">("event-management");
 
   // Theme support
   const [theme, setTheme] = useState<"light" | "dark">(() => {
@@ -613,14 +615,24 @@ export default function App() {
           )}
         </div>
 
-        <nav className="flex-1 space-y-1">
+        <nav className="flex-1 space-y-2">
           <a
             href="#"
-            className={`flex items-center rounded-xl bg-natural-accent-light text-natural-accent font-medium transition-colors ${isSidebarOpen ? "gap-3 px-3 py-2 text-sm" : "justify-center p-2"}`}
+            onClick={(e) => { e.preventDefault(); setActiveView("event-management"); }}
+            className={`flex items-center rounded-xl font-medium transition-colors ${activeView === "event-management" ? "bg-natural-accent-light text-natural-accent" : "text-natural-text-secondary hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-natural-text-primary"} ${isSidebarOpen ? "gap-3 px-3 py-2 text-sm" : "justify-center p-2"}`}
             title={!isSidebarOpen ? "Event Management" : undefined}
           >
             <CalendarCheck2 className="h-5 w-5 shrink-0" />
             {isSidebarOpen && <span className="whitespace-nowrap">Event Management</span>}
+          </a>
+          <a
+            href="#"
+            onClick={(e) => { e.preventDefault(); setActiveView("self-directed"); }}
+            className={`flex items-center rounded-xl font-medium transition-colors ${activeView === "self-directed" ? "bg-natural-accent-light text-natural-accent" : "text-natural-text-secondary hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-natural-text-primary"} ${isSidebarOpen ? "gap-3 px-3 py-2 text-sm" : "justify-center p-2"}`}
+            title={!isSidebarOpen ? "Self-Directed Activity" : undefined}
+          >
+            <Target className="h-5 w-5 shrink-0" />
+            {isSidebarOpen && <span className="whitespace-nowrap">Self-Directed Activity</span>}
           </a>
         </nav>
 
@@ -681,11 +693,12 @@ export default function App() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col min-w-0">
-        <div className="flex-1 overflow-y-auto p-4 md:p-10 lg:p-12">
-          <div className="mx-auto max-w-2xl">
-            {/* Header Section */}
-            <header className="mb-8 flex items-center justify-between pb-6 border-b border-natural-border">
+      <main className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
+        {activeView === "event-management" ? (
+          <div className="flex-1 overflow-y-auto p-4 md:p-10 lg:p-12">
+            <div className="mx-auto max-w-2xl">
+              {/* Header Section */}
+              <header className="mb-8 flex items-center justify-between pb-6 border-b border-natural-border">
               <div>
                 <div className="font-mono text-[10px] tracking-widest text-[#A09489] font-bold">
                   {todayFormatted}
@@ -791,6 +804,9 @@ export default function App() {
             </div>
           </div>
         </div>
+        ) : (
+          <SelfDirectedActivityDashboard user={user} />
+        )}
       </main>
 
       {/* Task Deletion Confirmation Dialog Component */}

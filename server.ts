@@ -11,15 +11,25 @@ const PORT = 3000;
 
 app.use(express.json());
 
-// Initialize Gemini Client
-const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY,
-  httpOptions: {
-    headers: {
-      "User-Agent": "aistudio-build",
-    },
-  },
-});
+// Lazy initialize Gemini Client
+let aiClient: GoogleGenAI | null = null;
+
+function getAiClient(): GoogleGenAI {
+  if (!aiClient) {
+    if (!process.env.GEMINI_API_KEY) {
+      throw new Error("GEMINI_API_KEY environment variable is required. Please set it in AI Studio settings.");
+    }
+    aiClient = new GoogleGenAI({
+      apiKey: process.env.GEMINI_API_KEY,
+      httpOptions: {
+        headers: {
+          "User-Agent": "aistudio-build",
+        },
+      },
+    });
+  }
+  return aiClient;
+}
 
 // Helper function to call Gemini API with exponential backoff on 429 Rate Limits
 async function callGeminiWithRetry<T>(
@@ -73,7 +83,7 @@ Given a natural language scheduling prompt, analyze the instructions and extract
 7. Always supply standard default registration questions (Full Name and Email Address) inside "registrationFields" if the prompt has requested registration of participants.`;
 
     const response = await callGeminiWithRetry(() =>
-      ai.models.generateContent({
+      getAiClient().models.generateContent({
         model: "gemini-3.5-flash",
         contents: `User scheduling prompt: "${prompt}"`,
         config: {
@@ -175,7 +185,7 @@ Make sure to always have safe default registration questions, like Full Name and
     const userPrompt = `Event Title: "${title || "Event Registration"}"\nDesired info / user constraints: "${prompt}"`;
 
     const response = await callGeminiWithRetry(() =>
-      ai.models.generateContent({
+      getAiClient().models.generateContent({
         model: "gemini-3.5-flash",
         contents: userPrompt,
         config: {
@@ -236,6 +246,121 @@ Make sure to always have safe default registration questions, like Full Name and
     console.error("AI dynamic form generation error:", error);
     return res.status(500).json({
       error: error instanceof Error ? error.message : String(error),
+    });
+  }
+});
+
+const systemInstruction = `Primary mission is to prevent users from missing important deadlines, commitments, assignments, meetings, projects, exams, and personal goals.
+
+You are NOT a reminder application.
+
+You do NOT simply notify users about tasks.
+
+Instead, you actively help users plan, prioritize, execute, and complete work before deadlines are missed.
+
+Core Responsibilities:
+
+Task Understanding
+Understand tasks expressed in natural language.
+Extract deadlines, priorities, dependencies, and effort estimates.
+Clarify ambiguity when necessary.
+Intelligent Prioritization
+Identify the most important tasks.
+Consider urgency, impact, effort, and deadlines.
+Recommend the highest-value actions.
+Planning
+Break large tasks into smaller actionable steps.
+Generate realistic schedules.
+Balance workload across available time.
+Risk Detection
+Identify tasks that are likely to be missed.
+Calculate and explain deadline risks.
+Warn users before problems become critical.
+Proactive Intervention
+When risk is detected, recommend corrective actions.
+Create recovery plans.
+Suggest schedule adjustments.
+Productivity Coaching
+Detect procrastination patterns.
+Encourage execution through practical guidance.
+Focus on action rather than motivation.
+Reflection and Improvement
+Analyze completed and missed tasks.
+Provide insights and recommendations.
+Help users continuously improve productivity.
+
+Behavior Rules:
+
+Be concise and actionable.
+Always explain reasoning.
+Prioritize execution over discussion.
+Recommend specific next actions.
+Prefer practical solutions over theoretical advice.
+Be proactive rather than reactive.
+Think like a chief of staff, not a chatbot.
+
+When users ask:
+"What should I do now?"
+
+Analyze:
+Upcoming deadlines
+Priority levels
+Risk scores
+Existing commitments
+
+Then provide:
+Most important task
+Reason
+Estimated effort
+Immediate next step
+
+Output Style:
+Clear
+Structured
+Practical
+Professional
+
+Never simply remind users about a task.
+Always help them complete it.`;
+
+app.post("/api/productivity-coach", async (req, res) => {
+  try {
+    const { messages } = req.body;
+    if (!messages || !Array.isArray(messages)) {
+      return res.status(400).json({ error: "Invalid messages array" });
+    }
+
+    const formattedMessages = messages.map((m: any) => ({
+      role: m.role === "model" ? "model" : "user",
+      parts: [{ text: m.content }],
+    }));
+
+    const response = await callGeminiWithRetry(() =>
+      getAiClient().models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: formattedMessages,
+        config: {
+          systemInstruction: {
+            role: "system",
+            parts: [{ text: systemInstruction }],
+          },
+          temperature: 0.7,
+        },
+      })
+    );
+
+    return res.json({ reply: response.text });
+  } catch (error: any) {
+    console.error("Productivity coach error:", error);
+    
+    // Check if error is related to API key
+    let errorMessage = error instanceof Error ? error.message : String(error);
+    if (errorMessage.includes("API key not valid") || errorMessage.includes("API_KEY_INVALID")) {
+      errorMessage = "Gemini API key is invalid or missing. Please configure a valid API key in your AI Studio settings.";
+    }
+
+    return res.status(500).json({
+      error: errorMessage,
     });
   }
 });
