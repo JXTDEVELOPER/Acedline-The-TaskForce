@@ -1,0 +1,1043 @@
+import { useEffect, useState } from "react";
+import { User } from "firebase/auth";
+import {
+  collection,
+  onSnapshot,
+  query,
+  where,
+  doc,
+  setDoc,
+  updateDoc,
+  deleteDoc,
+  serverTimestamp,
+} from "firebase/firestore";
+import {
+  db,
+  initAuth,
+  googleSignIn,
+  logout,
+  OperationType,
+  handleFirestoreError,
+} from "./lib/firebase";
+import {
+  createCalendarEvent,
+  updateCalendarEvent,
+  deleteCalendarEvent,
+  listCalendarEvents,
+} from "./lib/calendar";
+import { createMeetSpace } from "./lib/meet";
+import { createGoogleTask, updateGoogleTask, deleteGoogleTask } from "./lib/tasks";
+import { Task } from "./types";
+import { GsiButton } from "./components/GsiButton";
+import { TaskForm } from "./components/TaskForm";
+import { TaskItem } from "./components/TaskItem";
+import { RegistrationPage } from "./components/RegistrationPage";
+import { RegistrationFormBuilder } from "./components/RegistrationFormBuilder";
+import { LogOut, CalendarCheck2, LayoutList, RefreshCcw, AlertTriangle, Calendar, Sun, Moon, Menu, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
+
+export default function App() {
+  const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [authChecking, setAuthChecking] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncErrorMessage, setSyncErrorMessage] = useState<string | null>(null);
+  const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
+  const [registerTaskId, setRegisterTaskId] = useState<string | null>(null);
+  const [taskToManageRegistration, setTaskToManageRegistration] = useState<Task | null>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  // Theme support
+  const [theme, setTheme] = useState<"light" | "dark">(() => {
+    const saved = localStorage.getItem("theme");
+    if (saved === "light" || saved === "dark") return saved;
+    if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+      return "dark";
+    }
+    return "light";
+  });
+
+  useEffect(() => {
+    const root = window.document.documentElement;
+    if (theme === "dark") {
+      root.classList.add("dark");
+    } else {
+      root.classList.remove("dark");
+    }
+    localStorage.setItem("theme", theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === "light" ? "dark" : "light"));
+  };
+
+  // Calendar Event Import State variables
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [calendarEvents, setCalendarEvents] = useState<any[]>([]);
+  const [loadingCalendar, setLoadingCalendar] = useState(false);
+  const [calendarError, setCalendarError] = useState<string | null>(null);
+  const [importingEventIds, setImportingEventIds] = useState<string[]>([]);
+
+  // Load Registration route parameter
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const registerId = params.get("register");
+    if (registerId) {
+      setRegisterTaskId(registerId);
+    }
+  }, []);
+
+  // Load Auth state
+  useEffect(() => {
+    const unsubscribe = initAuth(
+      (currentUser, accessToken) => {
+        setUser(currentUser);
+        setToken(accessToken);
+        setAuthChecking(false);
+      },
+      () => {
+        // Logged out or needs popup authorization
+        setUser(null);
+        setToken(null);
+        setAuthChecking(false);
+        setLoading(false);
+      }
+    );
+    return () => unsubscribe();
+  }, []);
+
+  // Listen to Firestore tasks (Client-side sorted to avoid composite index requirements)
+  useEffect(() => {
+    if (!user) {
+      setTasks([]);
+      return;
+    }
+
+    setLoading(true);
+    const q = query(collection(db, "tasks"), where("userId", "==", user.uid));
+
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const list: Task[] = [];
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          list.push({
+            id: docSnap.id,
+            userId: data.userId,
+            title: data.title,
+            description: data.description || "",
+            dueDate: data.dueDate || undefined,
+            completed: !!data.completed,
+            googleEventId: data.googleEventId || null,
+            meetLink: data.meetLink || null,
+            googleTaskId: data.googleTaskId || null,
+            createdAt: data.createdAt,
+            updatedAt: data.updatedAt,
+          });
+        });
+        setTasks(list);
+        setLoading(false);
+      },
+      (error) => {
+        handleFirestoreError(error, OperationType.LIST, "tasks");
+        setLoading(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [user]);
+
+  // Handle Google OAuth Sign-in & Refresh Token
+  const handleSignIn = async () => {
+    setAuthChecking(true);
+    try {
+      const result = await googleSignIn();
+      if (result) {
+        setUser(result.user);
+        setToken(result.accessToken);
+      }
+    } catch (err) {
+      console.error("Sign in failed:", err);
+    } finally {
+      setAuthChecking(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await logout();
+      setUser(null);
+      setToken(null);
+    } catch (err) {
+      console.error("Logout failed:", err);
+    }
+  };
+
+  // Action: Add Task
+  const handleAddTask = async (
+    title: string,
+    description: string,
+    dueDate?: string,
+    addMeet?: boolean,
+    addGoogleTask?: boolean,
+    registrationFields?: any[]
+  ) => {
+    if (!user) return;
+    setIsSyncing(true);
+    setSyncErrorMessage(null);
+
+    let googleEventId: string | null = null;
+    let meetLink: string | null = null;
+    let googleTaskId: string | null = null;
+    const tempTaskId = `task-${Date.now()}`;
+
+    // 1. Generate Google Meet Link if selected
+    if (addMeet && token) {
+      try {
+        meetLink = await createMeetSpace(token);
+      } catch (e: any) {
+        console.error("Google Meet creation failed:", e);
+        setSyncErrorMessage("Failed to generate Google Meet link. Storing task without meeting.");
+      }
+    }
+
+    // 2. Sync to Google Tasks if selected and token exists
+    if (addGoogleTask && token) {
+      try {
+        const dummyTaskForTasks: Task = {
+          id: tempTaskId,
+          userId: user.uid,
+          title,
+          description,
+          dueDate,
+          completed: false,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+        googleTaskId = await createGoogleTask(dummyTaskForTasks, token);
+      } catch (e: any) {
+        console.error("Google Tasks Sync failed during creation:", e);
+        setSyncErrorMessage("Google Tasks creation failed, task stored locally.");
+      }
+    }
+
+    try {
+      // 3. Sync immediately to Google Calendar if deadline matches and token exists
+      if (dueDate && token) {
+        const dummyTaskForCalendar: Task = {
+          id: tempTaskId,
+          userId: user.uid,
+          title,
+          description,
+          dueDate,
+          completed: false,
+          meetLink,
+          googleTaskId,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+        googleEventId = await createCalendarEvent(dummyTaskForCalendar, token);
+      }
+    } catch (e: any) {
+      console.error("Google Calendar Sync failed during creation:", e);
+      setSyncErrorMessage("Initial calendar placement failed, task stored locally or in Tasks.");
+    }
+
+    try {
+      // 4. Commit model to Firestore
+      const taskDocRef = doc(db, "tasks", tempTaskId);
+      await setDoc(taskDocRef, {
+        id: tempTaskId,
+        userId: user.uid,
+        title,
+        description: description || null,
+        dueDate: dueDate || null,
+        completed: false,
+        googleEventId: googleEventId || null,
+        meetLink: meetLink || null,
+        googleTaskId: googleTaskId || null,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+
+      // If AI generated any registration form fields, create form schema in Firestore immediately
+      if (registrationFields && registrationFields.length > 0) {
+        const formDocRef = doc(db, "registration_forms", tempTaskId);
+        await setDoc(formDocRef, {
+          taskId: tempTaskId,
+          userId: user.uid,
+          title,
+          description: description || "Register for this event.",
+          fields: registrationFields,
+          googleFormId: null,
+          googleFormUrl: null,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
+
+        // Open registration suite overlay task modal
+        const newTaskRecord: Task = {
+          id: tempTaskId,
+          userId: user.uid,
+          title,
+          description: description || null,
+          dueDate: dueDate || null,
+          completed: false,
+          googleEventId: googleEventId || null,
+          meetLink: meetLink || null,
+          googleTaskId: googleTaskId || null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+        setTaskToManageRegistration(newTaskRecord);
+      }
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, `tasks/${tempTaskId}`);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  // Action: Generate Google Meet space for a task
+  const handleCreateMeetSpace = async (task: Task) => {
+    if (!user || !token) return;
+    setIsSyncing(true);
+    setSyncErrorMessage(null);
+
+    try {
+      const meetLink = await createMeetSpace(token);
+      
+      // Update Google Calendar event if synchronized
+      if (task.googleEventId) {
+        try {
+          const updatedTaskPayload = {
+            ...task,
+            meetLink,
+          };
+          await updateCalendarEvent(updatedTaskPayload, token);
+        } catch (calError) {
+          console.error("Failed to update Google Calendar event with Meet link:", calError);
+        }
+      }
+
+      // Update Firestore model
+      const taskDocRef = doc(db, "tasks", task.id);
+      await updateDoc(taskDocRef, {
+        meetLink: meetLink,
+        updatedAt: serverTimestamp(),
+      });
+    } catch (e: any) {
+      console.error("Google Meet creation failed:", e);
+      setSyncErrorMessage("Failed to create Google Meet space. Please check permissions.");
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  // Action: Synchronize an existing task with Google Tasks
+  const handleCreateGoogleTask = async (task: Task) => {
+    if (!user || !token) return;
+    setIsSyncing(true);
+    setSyncErrorMessage(null);
+
+    try {
+      const googleTaskId = await createGoogleTask(task, token);
+
+      const taskDocRef = doc(db, "tasks", task.id);
+      await updateDoc(taskDocRef, {
+        googleTaskId: googleTaskId,
+        updatedAt: serverTimestamp(),
+      });
+    } catch (e: any) {
+      console.error("Google Tasks sync failed:", e);
+      setSyncErrorMessage("Failed to sync to Google Tasks. Please check permissions.");
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  // Action: Toggle completion status
+  const handleToggleComplete = async (task: Task) => {
+    if (!user) return;
+    setIsSyncing(true);
+    setSyncErrorMessage(null);
+
+    const updatedCompletedState = !task.completed;
+
+    // Optional Google Calendar Update
+    try {
+      if (task.googleEventId && token) {
+        const updatedTaskPayload = {
+          ...task,
+          completed: updatedCompletedState,
+        };
+        await updateCalendarEvent(updatedTaskPayload, token);
+      }
+    } catch (e) {
+      console.error("Google Calendar Update failed:", e);
+      setSyncErrorMessage("Failed to update status on Google Calendar, synced state cached.");
+    }
+
+    // Optional Google Tasks Update
+    try {
+      if (task.googleTaskId && token) {
+        const updatedTaskPayload = {
+          ...task,
+          completed: updatedCompletedState,
+        };
+        await updateGoogleTask(updatedTaskPayload, token);
+      }
+    } catch (e) {
+      console.error("Google Tasks Update failed:", e);
+      setSyncErrorMessage("Failed to update status on Google Tasks, synced state cached.");
+    }
+
+    try {
+      const taskDocRef = doc(db, "tasks", task.id);
+      await updateDoc(taskDocRef, {
+        completed: updatedCompletedState,
+        updatedAt: serverTimestamp(),
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `tasks/${task.id}`);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  // Action: Trigger Deletion with a Custom Overlay confirmation dialog
+  const handleDeleteTask = async (task: Task) => {
+    setTaskToDelete(task);
+  };
+
+  // Action: Perform actual delete operation after user confirms in the custom dialog
+  const performDeleteTask = async (task: Task) => {
+    if (!user) return;
+    setIsSyncing(true);
+    setSyncErrorMessage(null);
+
+    // 1. Delete on Google Calendar first
+    if (task.googleEventId && token) {
+      try {
+        await deleteCalendarEvent(task.googleEventId, token);
+      } catch (e) {
+        console.error("Google Calendar Event Delete failed:", e);
+        setSyncErrorMessage("Failed to remove from Google Calendar. Task removed locally.");
+      }
+    }
+
+    // 2. Delete on Google Tasks
+    if (task.googleTaskId && token) {
+      try {
+        await deleteGoogleTask(task.googleTaskId, token);
+      } catch (e) {
+        console.error("Google Tasks Delete failed:", e);
+        setSyncErrorMessage("Failed to remove from Google Tasks. Task removed locally.");
+      }
+    }
+
+    // 3. Delete on Firestore
+    try {
+      const taskDocRef = doc(db, "tasks", task.id);
+      await deleteDoc(taskDocRef);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `tasks/${task.id}`);
+    } finally {
+      setIsSyncing(false);
+      setTaskToDelete(null);
+    }
+  };
+
+  // Action: Fetch events from Google Calendar to show in import modal
+  const handleFetchCalendarEvents = async () => {
+    if (!token) return;
+    setLoadingCalendar(true);
+    setCalendarError(null);
+    try {
+      const gEvents = await listCalendarEvents(token);
+      setCalendarEvents(gEvents);
+      setShowImportModal(true);
+    } catch (err: any) {
+      console.error("Failed to list calendar events:", err);
+      setCalendarError("Failed to fetch Google Calendar events. Please check your credentials or network and try again.");
+      setShowImportModal(true);
+    } finally {
+      setLoadingCalendar(false);
+    }
+  };
+
+  // Action: Import a single event from Google Calendar into local Tasks list
+  const handleImportEvent = async (event: any) => {
+    if (!user) return;
+    setImportingEventIds((prev) => [...prev, event.id]);
+    try {
+      const docId = `task-cal-${event.id}`;
+      const title = event.summary || "Untitled Event";
+      const description = event.description || "";
+      
+      let dueDate: string | undefined = undefined;
+      if (event.start) {
+        dueDate = event.start.dateTime || event.start.date || undefined;
+      }
+
+      const meetLink = event.hangoutLink || null;
+
+      const taskDocRef = doc(db, "tasks", docId);
+      await setDoc(taskDocRef, {
+        id: docId,
+        userId: user.uid,
+        title,
+        description: description || null,
+        dueDate: dueDate || null,
+        completed: false,
+        googleEventId: event.id,
+        meetLink: meetLink || null,
+        googleTaskId: null,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+    } catch (err: any) {
+      console.error("Failed to import calendar event:", err);
+      alert("Failed to import calendar event. Please try again.");
+    } finally {
+      setImportingEventIds((prev) => prev.filter((id) => id !== event.id));
+    }
+  };
+
+  // Local Sort Policy: Non-completed tasks with earlier due dates on top, then unscheduled tasks, completed tasks at the bottom.
+  const sortedTasks = [...tasks].sort((a, b) => {
+    if (a.completed !== b.completed) {
+      return a.completed ? 1 : -1;
+    }
+    if (a.dueDate && b.dueDate) {
+      return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+    }
+    if (a.dueDate) return -1;
+    if (b.dueDate) return 1;
+
+    // Fallback to local time (approximate client id parsing)
+    return b.id.localeCompare(a.id);
+  });
+
+  const activeCount = tasks.filter((t) => !t.completed).length;
+
+  // Render Registration page for public guests if requested via query parameter
+  if (registerTaskId) {
+    return (
+      <RegistrationPage
+        taskId={registerTaskId}
+        onBackToDashboard={() => {
+          // Clear query param and reset state to load standard dashboard
+          const url = new URL(window.location.href);
+          url.searchParams.delete("register");
+          window.history.replaceState({}, document.title, url.toString());
+          setRegisterTaskId(null);
+        }}
+        theme={theme}
+        toggleTheme={toggleTheme}
+      />
+    );
+  }
+
+  // Render Login state
+  if (!user) {
+    return (
+      <div className="flex min-h-screen flex-col justify-center bg-natural-bg px-6 py-12 antialiased relative">
+        <div className="absolute top-4 right-4 animate-fade-in">
+          <button
+            onClick={toggleTheme}
+            title={theme === "light" ? "Switch to Night Mode" : "Switch to Light Mode"}
+            className="rounded-full border border-natural-border bg-white p-2.5 text-natural-text-secondary shadow-xs hover:bg-natural-accent-light hover:text-natural-accent transition-all active:scale-95 cursor-pointer"
+          >
+            {theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+          </button>
+        </div>
+        <div className="sm:mx-auto sm:w-full sm:max-w-md">
+          {/* Minimalist Logo Icon */}
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-natural-accent text-white shadow-xs">
+            <LayoutList className="h-6 w-6" />
+          </div>
+          <h2 className="mt-6 text-center text-3xl font-semibold tracking-tight text-natural-text-dark font-sans">
+            Taskspace
+          </h2>
+          <p className="mt-2 text-center text-sm text-natural-text-secondary font-sans font-medium">
+            Declutter your schedule. Automatically sync your tasks and deadlines
+            straight to Google Calendar.
+          </p>
+        </div>
+
+        <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+          <div className="flex flex-col items-center justify-center rounded-2xl bg-white px-8 py-10 border border-natural-border shadow-xs">
+            {authChecking ? (
+              <div className="flex flex-col items-center gap-2.5">
+                <span className="h-6 w-6 animate-spin rounded-full border border-neutral-300 border-t-natural-accent" />
+                <span className="text-xs text-natural-text-secondary font-mono">Authenticating...</span>
+              </div>
+            ) : (
+              <GsiButton onClick={handleSignIn} />
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Formatting Today's date nicely in jetbrains mono
+  const todayFormatted = new Date()
+    .toLocaleDateString("en-US", {
+      weekday: "long",
+      month: "short",
+      day: "numeric",
+    })
+    .toUpperCase();
+
+  return (
+    <div className="min-h-screen bg-natural-bg text-natural-text-primary antialiased font-sans flex flex-col md:flex-row">
+      {/* Sidebar */}
+      <aside className={`transition-all duration-300 ease-in-out border-natural-border bg-white dark:bg-[#0b0b0c] flex flex-col shrink-0 ${isSidebarOpen ? "w-full md:w-64 p-6 md:border-r border-b md:border-b-0" : "w-0 md:w-20 p-0 md:p-4 md:border-r overflow-hidden"} md:h-screen md:sticky md:top-0 relative`}>
+        <div 
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          className={`flex items-center gap-2 mb-8 cursor-pointer hover:opacity-80 transition-opacity ${!isSidebarOpen && "justify-center mb-6"}`}
+          title={isSidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
+        >
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-natural-accent text-white shadow-xs">
+            <LayoutList className="h-4 w-4" />
+          </div>
+          {isSidebarOpen && (
+            <span className="text-xl font-semibold tracking-tight text-natural-text-dark whitespace-nowrap">
+              Taskspace
+            </span>
+          )}
+        </div>
+
+        <nav className="flex-1 space-y-1">
+          <a
+            href="#"
+            className={`flex items-center rounded-xl bg-natural-accent-light text-natural-accent font-medium transition-colors ${isSidebarOpen ? "gap-3 px-3 py-2 text-sm" : "justify-center p-2"}`}
+            title={!isSidebarOpen ? "Event Management" : undefined}
+          >
+            <CalendarCheck2 className="h-5 w-5 shrink-0" />
+            {isSidebarOpen && <span className="whitespace-nowrap">Event Management</span>}
+          </a>
+        </nav>
+
+        <div className={`mt-auto pt-6 border-t border-natural-border flex flex-col gap-4 ${!isSidebarOpen && "items-center"}`}>
+          <div className={`flex items-center gap-3 ${!isSidebarOpen && "justify-center"}`}>
+            {user.photoURL ? (
+              <img
+                src={user.photoURL}
+                alt={user.displayName || "Avatar"}
+                referrerPolicy="no-referrer"
+                className="h-9 w-9 shrink-0 rounded-full border border-natural-border"
+              />
+            ) : (
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-natural-accent text-xs font-semibold text-white uppercase">
+                {user.displayName?.charAt(0) || "U"}
+              </div>
+            )}
+            {isSidebarOpen && (
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-natural-text-dark truncate">
+                  {user.displayName || "User"}
+                </p>
+                <p className="text-xs text-natural-text-secondary truncate">
+                  {user.email}
+                </p>
+              </div>
+            )}
+          </div>
+          <div className={`flex justify-between gap-2 ${isSidebarOpen ? "items-center flex-row" : "flex-col items-center"}`}>
+            <button
+              id="theme-toggle"
+              onClick={toggleTheme}
+              title={theme === "light" ? "Switch to Night Mode" : "Switch to Light Mode"}
+              className={`flex items-center justify-center gap-2 rounded-lg border border-natural-border bg-white p-2 text-xs font-medium text-natural-text-secondary transition-colors hover:bg-natural-accent-light hover:text-natural-accent cursor-pointer ${isSidebarOpen ? "flex-1" : "w-10 h-10"}`}
+            >
+              {theme === "light" ? (
+                <>
+                  <Moon className="h-4 w-4 shrink-0" />
+                  {isSidebarOpen && "Dark Mode"}
+                </>
+              ) : (
+                <>
+                  <Sun className="h-4 w-4 shrink-0" />
+                  {isSidebarOpen && "Light Mode"}
+                </>
+              )}
+            </button>
+            <button
+              id="logout-button"
+              onClick={handleSignOut}
+              title="Sign out"
+              className={`flex items-center justify-center rounded-lg border border-natural-border bg-white p-2 text-natural-text-secondary transition-colors hover:bg-red-50 hover:text-red-600 hover:border-red-100 cursor-pointer ${!isSidebarOpen && "w-10 h-10"}`}
+            >
+              <LogOut className="h-4 w-4 shrink-0" />
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <main className="flex-1 flex flex-col min-w-0">
+        <div className="flex-1 overflow-y-auto p-4 md:p-10 lg:p-12">
+          <div className="mx-auto max-w-2xl">
+            {/* Header Section */}
+            <header className="mb-8 flex items-center justify-between pb-6 border-b border-natural-border">
+              <div>
+                <div className="font-mono text-[10px] tracking-widest text-[#A09489] font-bold">
+                  {todayFormatted}
+                </div>
+                <h1 className="mt-1 text-2xl font-light tracking-tight text-natural-text-dark">
+                  Event Management
+                </h1>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleFetchCalendarEvents}
+                  disabled={loadingCalendar}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-natural-accent-light/60 border border-natural-border px-3 py-1.5 text-xs font-bold text-natural-accent hover:bg-natural-accent-light hover:text-natural-accent-hover transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                >
+                  {loadingCalendar ? (
+                    <RefreshCcw className="h-3 w-3 animate-spin text-natural-accent" />
+                  ) : (
+                    <RefreshCcw className="h-3 w-3 text-natural-accent" />
+                  )}
+                  Import Events
+                </button>
+              </div>
+            </header>
+
+            {/* Sync Reconnect Notification */}
+            {!token ? (
+              <div
+                id="sync-paused-banner"
+                className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-xl border border-natural-gold bg-[#F7F5F2] p-4"
+              >
+                <div>
+                  <p className="text-xs font-semibold text-natural-text-dark">
+                    Google Calendar sync is paused.
+                  </p>
+                  <p className="mt-0.5 text-[11px] text-natural-text-secondary">
+                    Log in again to grant permission for calendar auto-updates.
+                  </p>
+                </div>
+                <button
+                  id="sync-reconnect-btn"
+                  onClick={handleSignIn}
+                  className="flex items-center gap-1.5 rounded-lg bg-natural-accent px-3 py-1.5 text-[11px] font-semibold text-white transition-all hover:bg-natural-accent-hover"
+                >
+                  <LayoutList className="h-3 w-3" />
+                  Reconnect Calendar
+                </button>
+              </div>
+            ) : (
+              <div className="mb-4 flex items-center justify-between gap-2 text-natural-text-secondary">
+                <div className="flex items-center gap-1.5">
+                  <CalendarCheck2 className="h-3.5 w-3.5 text-natural-accent" />
+                  <span className="font-mono text-[10px] text-natural-text-primary bg-natural-accent-light/55 px-3 py-1 rounded-full uppercase font-semibold tracking-wide">
+                    Calendar sync active
+                  </span>
+                </div>
+                <div className="font-mono text-[10px] font-semibold tracking-wider">
+                  {activeCount} PENDING {activeCount === 1 ? "EVENT" : "EVENTS"}
+                </div>
+              </div>
+            )}
+
+            {/* Sync error notes */}
+            {syncErrorMessage && (
+              <div className="mb-4 rounded-lg bg-red-50 p-2.5 text-xs text-red-600">
+                {syncErrorMessage}
+              </div>
+            )}
+
+            {/* Insert task Form */}
+            <TaskForm onAddTask={handleAddTask} isSyncing={isSyncing} />
+
+            {/* Tasks Container */}
+            <div id="tasks-list-container" className="rounded-2xl bg-white dark:bg-[#0b0b0c] p-3 border border-natural-border shadow-xs mt-6">
+              {loading ? (
+                <div className="flex flex-col items-center justify-center py-12 gap-2 text-natural-text-secondary">
+                  <span className="h-5 w-5 animate-spin rounded-full border border-neutral-200 border-t-natural-accent" />
+                  <span className="font-mono text-[10px] tracking-wide">Retrieving events...</span>
+                </div>
+              ) : sortedTasks.length === 0 ? (
+                <div className="py-12 text-center text-natural-text-secondary">
+                  <p className="text-sm font-medium text-natural-text-dark">Nothing scheduled yet.</p>
+                  <p className="mt-1 text-xs text-natural-text-secondary font-sans">
+                    Sit back, or type a deadline above to sync it.
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  {sortedTasks.map((task) => (
+                    <TaskItem
+                      key={task.id}
+                      task={task}
+                      onToggleComplete={handleToggleComplete}
+                      onDelete={handleDeleteTask}
+                      onCreateMeet={handleCreateMeetSpace}
+                      onCreateGoogleTask={handleCreateGoogleTask}
+                      onManageRegistration={setTaskToManageRegistration}
+                      isSyncing={isSyncing}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </main>
+
+      {/* Task Deletion Confirmation Dialog Component */}
+      <AnimatePresence>
+        {taskToDelete && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setTaskToDelete(null)}
+              className="absolute inset-0 bg-neutral-950/40 backdrop-blur-xs"
+            />
+
+            {/* Modal Box */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ duration: 0.15 }}
+              className="relative w-full max-w-sm overflow-hidden rounded-2xl border border-natural-border bg-white p-6 shadow-xl"
+            >
+              <div className="flex items-start gap-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-600">
+                  <AlertTriangle className="h-5 w-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-sm font-semibold text-natural-text-dark">
+                    Delete Task
+                  </h3>
+                  <p className="mt-2 text-xs text-natural-text-primary leading-relaxed break-words">
+                    Are you sure you want to delete <span className="font-semibold text-natural-text-dark">"{taskToDelete.title}"</span>?
+                  </p>
+                  {(taskToDelete.googleEventId || taskToDelete.googleTaskId) && (
+                    <div className="mt-3 rounded-xl bg-natural-panel p-2.5 border border-natural-border/60">
+                      <p className="font-mono text-[9px] uppercase tracking-wider font-bold text-natural-text-dark mb-1">
+                        Workspace Sync Actions
+                      </p>
+                      <ul className="list-disc pl-3.5 text-[10px] text-natural-text-primary space-y-0.5">
+                        {taskToDelete.googleEventId && (
+                          <li>Remove associated event from Google Calendar</li>
+                        )}
+                        {taskToDelete.googleTaskId && (
+                          <li>Delete synced task in Google Tasks</li>
+                        )}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="mt-6 flex items-center justify-end gap-2 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setTaskToDelete(null)}
+                  className="rounded-full border border-natural-border bg-white px-3.5 py-1.5 font-medium text-natural-text-primary transition-all hover:bg-neutral-50 active:scale-95 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => performDeleteTask(taskToDelete)}
+                  disabled={isSyncing}
+                  className="flex items-center gap-1 rounded-full bg-red-600 px-3.5 py-1.5 font-semibold text-white transition-all hover:bg-red-700 active:scale-95 disabled:bg-red-300 cursor-pointer"
+                >
+                  {isSyncing && (
+                    <span className="h-3 w-3 animate-spin rounded-full border border-neutral-300 border-t-white" />
+                  )}
+                  Delete Task
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {taskToManageRegistration && (
+          <RegistrationFormBuilder
+            task={taskToManageRegistration}
+            user={user}
+            onClose={() => setTaskToManageRegistration(null)}
+          />
+        )}
+
+        {showImportModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowImportModal(false)}
+              className="absolute inset-0 bg-neutral-950/40 backdrop-blur-xs"
+            />
+
+            {/* Modal Box */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ duration: 0.15 }}
+              className="relative w-full max-w-md overflow-hidden rounded-3xl border border-natural-border bg-white p-6 shadow-xl flex flex-col max-h-[80vh]"
+            >
+              <div className="flex items-start gap-3 pb-4 border-b border-natural-border">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-natural-accent-light text-natural-accent">
+                  <Calendar className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-natural-text-dark">
+                    Import Calendar Events
+                  </h3>
+                  <p className="mt-1 text-xs text-natural-text-secondary leading-relaxed">
+                    Import existing events from your Google Calendar straight into Taskspace.
+                  </p>
+                </div>
+              </div>
+
+              {calendarError ? (
+                <div className="my-6 rounded-2xl bg-red-50 p-4 border border-red-100 flex items-start gap-2.5">
+                  <AlertTriangle className="h-4 w-4 text-red-500 shrink-0 mt-0.5" />
+                  <div className="text-xs text-red-700 leading-relaxed font-semibold">
+                    {calendarError}
+                  </div>
+                </div>
+              ) : null}
+
+              {/* Event lists */}
+              {!calendarError && (
+                <div className="overflow-y-auto my-4 py-2 flex-1 space-y-3 pr-1">
+                  {calendarEvents.length === 0 ? (
+                    <div className="py-12 text-center text-natural-text-secondary">
+                      <p className="text-sm font-medium text-natural-text-dark">No upcoming events found</p>
+                      <p className="mt-1 text-xs text-natural-text-secondary">
+                        We couldn't locate any upcoming events on your primary Google Calendar.
+                      </p>
+                    </div>
+                  ) : (
+                    <div>
+                      {/* Filter events that are not yet imported */}
+                      {(() => {
+                        const importedIds = new Set(
+                          tasks
+                            .map((t) => t.googleEventId)
+                            .filter(Boolean)
+                        );
+                        const filteredEvents = calendarEvents.filter(
+                          (event) => !importedIds.has(event.id)
+                        );
+
+                        if (filteredEvents.length === 0) {
+                          return (
+                            <div className="py-8 text-center text-natural-text-secondary">
+                              <p className="text-sm font-semibold text-natural-text-dark">All events already synced</p>
+                              <p className="mt-1 text-xs text-natural-text-secondary">
+                                Everything matches up of your {calendarEvents.length} calendar events!
+                              </p>
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <div className="space-y-3">
+                            {filteredEvents.map((event) => {
+                              const isImporting = importingEventIds.includes(event.id);
+                              
+                              // Format date/time
+                              let formattedTiming = "No date scheduled";
+                              if (event.start) {
+                                const startDate = event.start.dateTime || event.start.date;
+                                try {
+                                  const d = new Date(startDate);
+                                  const options: Intl.DateTimeFormatOptions = {
+                                    month: "short",
+                                    day: "numeric",
+                                  };
+                                  if (event.start.dateTime) {
+                                    options.hour = "2-digit";
+                                    options.minute = "2-digit";
+                                  }
+                                  formattedTiming = d.toLocaleDateString("en-US", options);
+                                } catch {
+                                  formattedTiming = startDate;
+                                }
+                              }
+
+                              return (
+                                <div
+                                  key={event.id}
+                                  className="flex items-center justify-between gap-4 p-3.5 rounded-2xl border border-natural-border/70 hover:bg-[#FAF9F6] transition-colors"
+                                >
+                                  <div className="min-w-0 flex-1">
+                                    <h4 className="text-sm font-semibold text-natural-text-dark truncate">
+                                      {event.summary || "Untitled Event"}
+                                    </h4>
+                                    {event.description && (
+                                      <p className="text-xs text-natural-text-secondary truncate mt-0.5 max-h-12 line-clamp-2">
+                                        {event.description}
+                                      </p>
+                                    )}
+                                    <div className="mt-2 flex flex-wrap gap-1.5">
+                                      <span className="inline-flex items-center gap-1 bg-natural-accent-light px-2 py-0.5 rounded-md text-[10px] font-semibold text-natural-accent">
+                                        {formattedTiming}
+                                      </span>
+                                      {event.hangoutLink && (
+                                        <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 border border-blue-200 px-2 py-0.5 text-[10px] font-semibold text-blue-600">
+                                          Meet link included
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => handleImportEvent(event)}
+                                    disabled={isImporting}
+                                    className="shrink-0 inline-flex items-center gap-1 rounded-full bg-natural-accent px-3 py-1.5 text-xs font-bold text-white transition-all hover:bg-natural-accent-hover active:scale-95 disabled:bg-neutral-300 disabled:cursor-not-allowed cursor-pointer shadow-md"
+                                  >
+                                    {isImporting ? (
+                                      <span className="h-3.5 w-3.5 animate-spin rounded-full border border-neutral-300 border-t-white" />
+                                    ) : (
+                                      <span>Import</span>
+                                    )}
+                                  </button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="flex items-center justify-end pt-4 border-t border-natural-border text-xs mt-auto">
+                <button
+                  type="button"
+                  onClick={() => setShowImportModal(false)}
+                  className="rounded-full border border-natural-border bg-white px-5 py-2 font-semibold text-natural-text-primary transition-all hover:bg-neutral-50 active:scale-95 cursor-pointer shadow-xs"
+                >
+                  Close Panel
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}

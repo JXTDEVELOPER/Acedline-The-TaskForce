@@ -1,0 +1,8 @@
+{
+  "name": "To-Do List & Calendar Sync",
+  "description": "A minimalist task manager that automatically synchronizes your to-dos, deadlines, and completion statuses with your Google Calendar events.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
