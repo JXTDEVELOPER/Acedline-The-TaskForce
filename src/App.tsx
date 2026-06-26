@@ -34,7 +34,8 @@ import { TaskItem } from "./components/TaskItem";
 import { RegistrationPage } from "./components/RegistrationPage";
 import { RegistrationFormBuilder } from "./components/RegistrationFormBuilder";
 import { SelfDirectedActivityDashboard } from "./components/SelfDirectedActivityDashboard";
-import { LogOut, CalendarCheck2, LayoutList, RefreshCcw, AlertTriangle, Calendar, Sun, Moon, Menu, X, ChevronLeft, ChevronRight, Target } from "lucide-react";
+import { KanbanBoard } from "./components/KanbanBoard";
+import { LogOut, CalendarCheck2, LayoutList, RefreshCcw, AlertTriangle, Calendar, Sun, Moon, Menu, X, ChevronLeft, ChevronRight, Target, Columns } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 
 export default function App() {
@@ -50,6 +51,7 @@ export default function App() {
   const [taskToManageRegistration, setTaskToManageRegistration] = useState<Task | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [activeView, setActiveView] = useState<"event-management" | "self-directed">("event-management");
+  const [viewMode, setViewMode] = useState<"list" | "kanban">("list");
 
   // Theme support
   const [theme, setTheme] = useState<"light" | "dark">(() => {
@@ -416,6 +418,25 @@ export default function App() {
     }
   };
 
+  // Action: Update Task Stage (Kanban)
+  const handleUpdateStage = async (taskId: string, stage: string) => {
+    if (!user) return;
+    setIsSyncing(true);
+    setSyncErrorMessage(null);
+
+    try {
+      const taskDocRef = doc(db, "tasks", taskId);
+      await updateDoc(taskDocRef, {
+        stage,
+        updatedAt: serverTimestamp(),
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `tasks/${taskId}`);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   // Action: Trigger Deletion with a Custom Overlay confirmation dialog
   const handleDeleteTask = async (task: Task) => {
     setTaskToDelete(task);
@@ -777,22 +798,61 @@ export default function App() {
             {/* Insert task Form */}
             <TaskForm onAddTask={handleAddTask} isSyncing={isSyncing} />
 
+            {/* View Mode Toggle */}
+            <div className="flex justify-end mt-6 mb-2">
+              <div className="flex bg-neutral-100 dark:bg-neutral-800 p-1 rounded-lg">
+                <button
+                  onClick={() => setViewMode("list")}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                    viewMode === "list"
+                      ? "bg-white dark:bg-neutral-700 text-natural-text-dark shadow-sm"
+                      : "text-natural-text-secondary hover:text-natural-text-primary"
+                  }`}
+                >
+                  <LayoutList className="h-3.5 w-3.5" />
+                  List
+                </button>
+                <button
+                  onClick={() => setViewMode("kanban")}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                    viewMode === "kanban"
+                      ? "bg-white dark:bg-neutral-700 text-natural-text-dark shadow-sm"
+                      : "text-natural-text-secondary hover:text-natural-text-primary"
+                  }`}
+                >
+                  <Columns className="h-3.5 w-3.5" />
+                  Board
+                </button>
+              </div>
+            </div>
+
             {/* Tasks Container */}
-            <div id="tasks-list-container" className="rounded-2xl bg-white dark:bg-[#0b0b0c] p-3 border border-natural-border shadow-xs mt-6">
+            <div id="tasks-container" className="rounded-2xl p-0 mt-2">
               {loading ? (
-                <div className="flex flex-col items-center justify-center py-12 gap-2 text-natural-text-secondary">
+                <div className="flex flex-col items-center justify-center py-12 gap-2 text-natural-text-secondary bg-white dark:bg-[#0b0b0c] border border-natural-border shadow-xs rounded-2xl">
                   <span className="h-5 w-5 animate-spin rounded-full border border-neutral-200 border-t-natural-accent" />
                   <span className="font-mono text-[10px] tracking-wide">Retrieving events...</span>
                 </div>
               ) : sortedTasks.length === 0 ? (
-                <div className="py-12 text-center text-natural-text-secondary">
+                <div className="py-12 text-center text-natural-text-secondary bg-white dark:bg-[#0b0b0c] border border-natural-border shadow-xs rounded-2xl">
                   <p className="text-sm font-medium text-natural-text-dark">Nothing scheduled yet.</p>
                   <p className="mt-1 text-xs text-natural-text-secondary font-sans">
                     Sit back, or type a deadline above to sync it.
                   </p>
                 </div>
+              ) : viewMode === "kanban" ? (
+                <KanbanBoard
+                  tasks={sortedTasks}
+                  onToggleComplete={handleToggleComplete}
+                  onDelete={handleDeleteTask}
+                  onCreateMeet={handleCreateMeetSpace}
+                  onCreateGoogleTask={handleCreateGoogleTask}
+                  onManageRegistration={setTaskToManageRegistration}
+                  onUpdateStage={handleUpdateStage}
+                  isSyncing={isSyncing}
+                />
               ) : (
-                <div>
+                <div className="rounded-2xl bg-white dark:bg-[#0b0b0c] p-3 border border-natural-border shadow-xs">
                   {sortedTasks.map((task) => (
                     <TaskItem
                       key={task.id}

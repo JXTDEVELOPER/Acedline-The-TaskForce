@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { User } from "firebase/auth";
-import { Target, Send, Loader2, Calendar as CalendarIcon, FileText, Mail, AlertCircle, Clock, Table, StickyNote, GraduationCap, ClipboardList } from "lucide-react";
+import { Target, Send, Loader2, Calendar as CalendarIcon, FileText, Mail, AlertCircle, Clock, Table, StickyNote, GraduationCap, ClipboardList, BrainCircuit } from "lucide-react";
 import Markdown from "react-markdown";
 import { Task, getDynamicPriority } from "../types";
 import { createGoogleDocWithInstructions, draftEmailWithInstructions, createGoogleSlidesPresentation, createGoogleSheetForTask, createGoogleKeepNote, createGoogleForm, createGoogleClassroom } from "../lib/workspace";
@@ -39,6 +39,7 @@ export function SelfDirectedActivityDashboard({
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isDrafting, setIsDrafting] = useState<string | null>(null);
+  const [deepThinking, setDeepThinking] = useState(false);
 
   // Filter tasks into priorities (only incomplete tasks)
   const incompleteTasks = tasks.filter(t => !t.completed);
@@ -72,6 +73,7 @@ export function SelfDirectedActivityDashboard({
         },
         body: JSON.stringify({
           messages: [...messages, { role: "user", content: userMessage }],
+          deepThinking,
         }),
       });
 
@@ -360,22 +362,38 @@ export function SelfDirectedActivityDashboard({
 
           {/* Input Area */}
           <div className="p-4 border-t border-neutral-100 dark:border-neutral-900 bg-white dark:bg-[#0b0b0c]">
-            <form onSubmit={handleSubmit} className="relative max-w-4xl mx-auto">
-              <input
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask 'What should I do now?' or share a task..."
-                className="w-full bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-full pl-6 pr-14 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all dark:text-white"
-                disabled={isLoading}
-              />
-              <button
-                type="submit"
-                disabled={!input.trim() || isLoading}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-              >
-                <Send className="h-4 w-4" />
-              </button>
+            <form onSubmit={handleSubmit} className="relative max-w-4xl mx-auto flex flex-col gap-2">
+              <div className="flex items-center justify-end px-2">
+                <button
+                  type="button"
+                  onClick={() => setDeepThinking(!deepThinking)}
+                  className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full transition-colors ${
+                    deepThinking
+                      ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400"
+                      : "bg-neutral-100 text-neutral-500 hover:bg-neutral-200 dark:bg-neutral-900 dark:hover:bg-neutral-800"
+                  }`}
+                >
+                  <BrainCircuit className="w-3.5 h-3.5" />
+                  High Thinking
+                </button>
+              </div>
+              <div className="relative w-full">
+                <input
+                  type="text"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder="Ask 'What should I do now?' or share a task..."
+                  className="w-full bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-full pl-6 pr-14 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all dark:text-white"
+                  disabled={isLoading}
+                />
+                <button
+                  type="submit"
+                  disabled={!input.trim() || isLoading}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                >
+                  <Send className="h-4 w-4" />
+                </button>
+              </div>
             </form>
           </div>
         </div>

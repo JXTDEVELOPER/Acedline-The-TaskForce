@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Plus, Calendar, Clock, Sparkles, Video, ListTodo } from "lucide-react";
+import { Plus, Calendar, Clock, Sparkles, Video, ListTodo, Mic } from "lucide-react";
 import { Task } from "../types";
 
 interface TaskFormProps {
@@ -34,6 +34,88 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onAddTask, isSyncing }) => {
   const [aiPrompt, setAiPrompt] = useState("");
   const [isAiGenerating, setIsAiGenerating] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
+  const [isAutofilling, setIsAutofilling] = useState(false);
+  const [isDictating, setIsDictating] = useState(false);
+
+  const handleDictate = () => {
+    // @ts-ignore
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Your browser does not support the Web Speech API.");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "en-US";
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = () => {
+      setIsDictating(true);
+    };
+
+    recognition.onresult = async (event: any) => {
+      setIsDictating(false);
+      const transcript = event.results[0][0].transcript;
+      
+      // Parse the dictated text using Gemini
+      try {
+        const res = await fetch("/api/parse-dictation", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: transcript }),
+        });
+        
+        if (res.ok) {
+          const data = await res.json();
+          if (data.title) setTitle(data.title);
+          if (data.dueDate || data.dueTime) setHasDueDate(true);
+          if (data.dueDate) setDueDateStr(data.dueDate);
+          if (data.dueTime) setDueTimeStr(data.dueTime);
+        } else {
+          setTitle(transcript);
+        }
+      } catch (err) {
+        console.error("Dictation parsing failed", err);
+        setTitle(transcript); // Fallback to just the raw transcript
+      }
+    };
+
+    recognition.onerror = (event: any) => {
+      setIsDictating(false);
+      console.error("Speech recognition error:", event.error);
+      if (event.error === 'not-allowed') {
+        alert("Microphone access was denied. Please allow microphone access in your browser or open the app in a new tab.");
+      }
+    };
+
+    recognition.onend = () => {
+      setIsDictating(false);
+    };
+
+    recognition.start();
+  };
+
+  const handleSmartAutofill = async () => {
+    if (!title.trim() || isAutofilling) return;
+    setIsAutofilling(true);
+    try {
+      const res = await fetch("/api/smart-task-autofill", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: title.trim() }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.description) setDescription(data.description);
+        if (data.priority) setPriority(data.priority);
+      }
+    } catch (err) {
+      console.error("Autofill failed", err);
+    } finally {
+      setIsAutofilling(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -207,7 +289,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onAddTask, isSyncing }) => {
         <form onSubmit={handleSubmit}>
           <div className="flex flex-col gap-4">
             {/* Title Input */}
-            <div>
+            <div className="relative flex items-center">
               <input
                 id="task-title-input"
                 type="text"
@@ -215,8 +297,32 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onAddTask, isSyncing }) => {
                 placeholder="Create a new task..."
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full border-0 border-b border-transparent bg-transparent py-1 text-lg font-medium text-natural-text-dark placeholder-natural-text-secondary/60 focus:border-natural-accent/30 focus:outline-hidden"
+                className="w-full border-0 border-b border-transparent bg-transparent py-1 pr-20 text-lg font-medium text-natural-text-dark placeholder-natural-text-secondary/60 focus:border-natural-accent/30 focus:outline-hidden"
               />
+              <div className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center">
+                <button
+                  type="button"
+                  onClick={handleDictate}
+                  disabled={isDictating}
+                  title="Dictate task (auto-fills title and date)"
+                  className={`p-1.5 rounded-full transition-colors ${
+                    isDictating ? 'text-red-500 bg-red-50 animate-pulse' : 'text-natural-text-secondary hover:bg-natural-accent/10 hover:text-natural-accent'
+                  }`}
+                >
+                  <Mic className="w-4 h-4" />
+                </button>
+                {title.trim().length > 2 && (
+                  <button
+                    type="button"
+                    onClick={handleSmartAutofill}
+                    disabled={isAutofilling}
+                    title="Auto-fill description and priority with Gemini"
+                    className="p-1.5 text-natural-accent hover:bg-natural-accent/10 rounded-full transition-colors disabled:opacity-50"
+                  >
+                    <Sparkles className={`w-4 h-4 ${isAutofilling ? 'animate-spin' : ''}`} />
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Optional Description */}

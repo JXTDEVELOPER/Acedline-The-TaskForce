@@ -6,6 +6,7 @@ export interface Task {
   dueDate?: string; // ISO String (e.g. 2026-06-03T15:30:00.000Z) or YYYY-MM-DD
   completed: boolean;
   priority?: "high" | "medium" | "low";
+  stage?: string;
   googleEventId?: string | null;
   meetLink?: string | null;
   googleTaskId?: string | null;

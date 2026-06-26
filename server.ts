@@ -325,7 +325,7 @@ Always help them complete it.`;
 
 app.post("/api/productivity-coach", async (req, res) => {
   try {
-    const { messages } = req.body;
+    const { messages, deepThinking } = req.body;
     if (!messages || !Array.isArray(messages)) {
       return res.status(400).json({ error: "Invalid messages array" });
     }
@@ -335,17 +335,26 @@ app.post("/api/productivity-coach", async (req, res) => {
       parts: [{ text: m.content }],
     }));
 
+    const modelName = deepThinking ? "gemini-3.1-pro-preview" : "gemini-3.5-flash";
+    const config: any = {
+      systemInstruction: {
+        role: "system",
+        parts: [{ text: systemInstruction }],
+      },
+      temperature: 0.7,
+    };
+
+    if (deepThinking) {
+      config.thinkingConfig = {
+        thinkingLevel: "HIGH"
+      };
+    }
+
     const response = await callGeminiWithRetry(() =>
       getAiClient().models.generateContent({
-        model: "gemini-2.5-flash",
+        model: modelName,
         contents: formattedMessages,
-        config: {
-          systemInstruction: {
-            role: "system",
-            parts: [{ text: systemInstruction }],
-          },
-          temperature: 0.7,
-        },
+        config: deepThinking ? { ...config, thinkingConfig: { thinkingLevel: "HIGH" } } : config,
       })
     );
 
@@ -382,7 +391,7 @@ If it is possible, provide a clear, step-by-step action plan to complete the tas
 
     const response = await callGeminiWithRetry(() =>
       ai.models.generateContent({
-        model: "gemini-2.5-flash",
+        model: "gemini-3.5-flash",
         contents: prompt,
         config: {
           systemInstruction: {
@@ -402,6 +411,106 @@ If it is possible, provide a clear, step-by-step action plan to complete the tas
       errorMessage = "Gemini API key is invalid or missing.";
     }
     return res.status(500).json({ error: errorMessage });
+  }
+});
+
+// API endpoint to parse dictated task to fill title and due date
+app.post("/api/parse-dictation", async (req, res) => {
+  try {
+    const { text } = req.body;
+    if (!text) {
+      return res.status(400).json({ error: "Text is required" });
+    }
+
+    const todayDateStr = new Date().toISOString().split("T")[0];
+    const systemInstruction = `You are a helpful assistant. The user has dictated a task.
+Extract the task title and the due date/time if mentioned.
+Current date reference: ${todayDateStr}
+
+Output ONLY a JSON object with:
+- "title": A concise string for the task title.
+- "dueDate": "YYYY-MM-DD" if a date is mentioned, otherwise null.
+- "dueTime": "HH:MM" (24-hour format) if a specific time is mentioned, otherwise null.`;
+
+    const response = await callGeminiWithRetry(() =>
+      getAiClient().models.generateContent({
+        model: "gemini-3.1-flash-lite",
+        contents: `Dictated text: "${text}"`,
+        config: {
+          systemInstruction: {
+            role: "system",
+            parts: [{ text: systemInstruction }],
+          },
+          temperature: 0.2,
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              title: { type: Type.STRING },
+              dueDate: { type: Type.STRING, nullable: true },
+              dueTime: { type: Type.STRING, nullable: true },
+            },
+            required: ["title"],
+          }
+        },
+      })
+    );
+
+    const textResponse = response.text || "{}";
+    const data = JSON.parse(textResponse.trim());
+    return res.json(data);
+  } catch (error: any) {
+    console.error("Parse dictation error:", error);
+    return res.status(500).json({ error: "Failed to parse dictation" });
+  }
+});
+
+app.post("/api/smart-task-autofill", async (req, res) => {
+  try {
+    const { title } = req.body;
+    if (!title) {
+      return res.status(400).json({ error: "Task title is required" });
+    }
+
+    const ai = getAiClient();
+    const systemInstruction = `You are a helpful assistant. The user has provided a task title.
+You must output ONLY a JSON object with two fields:
+- "description": A concise, practical 2-3 sentence description of the sub-steps or context needed to complete this task.
+- "priority": One of "high", "medium", or "low" based on how typically urgent this kind of task is.
+
+Do not output any markdown formatting (like \`\`\`json), just the raw JSON object.`;
+
+    const prompt = `Task Title: ${title}`;
+
+    const response = await callGeminiWithRetry(() =>
+      ai.models.generateContent({
+        model: "gemini-3.1-flash-lite",
+        contents: prompt,
+        config: {
+          systemInstruction: {
+            role: "system",
+            parts: [{ text: systemInstruction }],
+          },
+          temperature: 0.3,
+          responseMimeType: "application/json",
+        },
+      })
+    );
+
+    const jsonText = response.text || "{}";
+    let data;
+    try {
+      data = JSON.parse(jsonText);
+    } catch (e) {
+      // fallback in case model included markdown
+      const cleaned = jsonText.replace(/```json/g, "").replace(/```/g, "").trim();
+      data = JSON.parse(cleaned);
+    }
+
+    return res.json(data);
+  } catch (error: any) {
+    console.error("Smart autofill error:", error);
+    return res.status(500).json({ error: "Failed to generate suggestions" });
   }
 });
 
