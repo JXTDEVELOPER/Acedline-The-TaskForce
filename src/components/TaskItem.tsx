@@ -1,6 +1,6 @@
 import React from "react";
 import { Check, Trash2, CalendarDays, ExternalLink, RefreshCw, Video, ListTodo, Sparkles } from "lucide-react";
-import { Task } from "../types";
+import { Task, getDynamicPriority } from "../types";
 
 interface TaskItemProps {
   task: Task;
@@ -112,9 +112,21 @@ export const TaskItem: React.FC<TaskItemProps> = ({
           </p>
         ) : null}
 
-        {/* Task badging (Due dates, Meet links, Google Task links, Synced tag) */}
-        {(task.dueDate || task.googleEventId || task.meetLink || task.googleTaskId || (onCreateMeet && !task.completed) || (onCreateGoogleTask && !task.completed)) ? (
-          <div className="mt-2 flex flex-wrap gap-2">
+        {/* Task badging (Due dates, priority, Meet links, Google Task links, Synced tag) */}
+        {(task.dueDate || task.priority || task.googleEventId || task.meetLink || task.googleTaskId || (onCreateMeet && !task.completed) || (onCreateGoogleTask && !task.completed)) ? (
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            {(task.priority || task.dueDate) && (() => {
+              const dynPri = getDynamicPriority(task);
+              return (
+                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide border ${
+                  dynPri === "high" ? "bg-red-50 text-red-600 border-red-200" :
+                  dynPri === "medium" ? "bg-yellow-50 text-yellow-700 border-yellow-200" :
+                  "bg-green-50 text-green-600 border-green-200"
+                }`}>
+                  {dynPri}
+                </span>
+              );
+            })()}
             {task.dueDate ? (
               <span className="inline-flex items-center gap-1.5 rounded-full bg-natural-accent-light px-2.5 py-0.5 text-[10px] font-medium text-natural-accent">
                 <CalendarDays className="h-3 w-3" />

@@ -365,6 +365,46 @@ app.post("/api/productivity-coach", async (req, res) => {
   }
 });
 
+app.post("/api/generate-action-plan", async (req, res) => {
+  try {
+    const { taskTitle, taskDescription } = req.body;
+    if (!taskTitle) {
+      return res.status(400).json({ error: "Task title is required" });
+    }
+
+    const ai = getAiClient();
+    const systemInstruction = `You are a productivity expert. The user wants instructions on how to complete a task.
+First, check if the task is realistic and possible to complete.
+If it is impossible or highly unrealistic, politely explain why and suggest a better alternative.
+If it is possible, provide a clear, step-by-step action plan to complete the task. Be concise and practical.`;
+
+    const prompt = `Task: ${taskTitle}\nDetails: ${taskDescription || "None"}\nProvide an action plan.`;
+
+    const response = await callGeminiWithRetry(() =>
+      ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: prompt,
+        config: {
+          systemInstruction: {
+            role: "system",
+            parts: [{ text: systemInstruction }],
+          },
+          temperature: 0.5,
+        },
+      })
+    );
+
+    return res.json({ instructions: response.text });
+  } catch (error: any) {
+    console.error("Action plan generation error:", error);
+    let errorMessage = error instanceof Error ? error.message : String(error);
+    if (errorMessage.includes("API key not valid") || errorMessage.includes("API_KEY_INVALID")) {
+      errorMessage = "Gemini API key is invalid or missing.";
+    }
+    return res.status(500).json({ error: errorMessage });
+  }
+});
+
 // API routes FIRST
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok" });

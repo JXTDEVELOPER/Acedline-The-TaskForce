@@ -9,7 +9,8 @@ interface TaskFormProps {
     dueDate?: string,
     addMeet?: boolean,
     addGoogleTask?: boolean,
-    registrationFields?: any[]
+    registrationFields?: any[],
+    priority?: "high" | "medium" | "low"
   ) => Promise<void>;
   isSyncing: boolean;
 }
@@ -24,6 +25,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onAddTask, isSyncing }) => {
   const [hasDueDate, setHasDueDate] = useState(false);
   const [dueDateStr, setDueDateStr] = useState("");
   const [dueTimeStr, setDueTimeStr] = useState("");
+  const [priority, setPriority] = useState<"high" | "medium" | "low" | undefined>(undefined);
   const [addMeet, setAddMeet] = useState(false);
   const [addGoogleTask, setAddGoogleTask] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -55,13 +57,14 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onAddTask, isSyncing }) => {
         }
       }
 
-      await onAddTask(title.trim(), description.trim(), finalDueDate, addMeet, addGoogleTask);
+      await onAddTask(title.trim(), description.trim(), finalDueDate, addMeet, addGoogleTask, undefined, priority);
 
       // Reset values
       setTitle("");
       setDescription("");
       setDueDateStr("");
       setDueTimeStr("");
+      setPriority(undefined);
       setHasDueDate(false);
       setAddMeet(false);
       setAddGoogleTask(false);
@@ -261,6 +264,46 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onAddTask, isSyncing }) => {
                 </div>
               </div>
             ) : null}
+
+            {/* Priority Selection */}
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-natural-text-secondary font-medium">Priority:</span>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPriority(priority === "high" ? undefined : "high")}
+                  className={`px-3 py-1 text-[10px] font-bold rounded-full transition-colors border ${
+                    priority === "high" 
+                      ? "bg-red-50 text-red-600 border-red-200 dark:bg-red-900/30 dark:border-red-800" 
+                      : "bg-transparent text-natural-text-secondary border-natural-border hover:bg-neutral-50 dark:hover:bg-neutral-800"
+                  }`}
+                >
+                  High
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPriority(priority === "medium" ? undefined : "medium")}
+                  className={`px-3 py-1 text-[10px] font-bold rounded-full transition-colors border ${
+                    priority === "medium" 
+                      ? "bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:border-yellow-800 dark:text-yellow-500" 
+                      : "bg-transparent text-natural-text-secondary border-natural-border hover:bg-neutral-50 dark:hover:bg-neutral-800"
+                  }`}
+                >
+                  Medium
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPriority(priority === "low" ? undefined : "low")}
+                  className={`px-3 py-1 text-[10px] font-bold rounded-full transition-colors border ${
+                    priority === "low" 
+                      ? "bg-green-50 text-green-600 border-green-200 dark:bg-green-900/30 dark:border-green-800" 
+                      : "bg-transparent text-natural-text-secondary border-natural-border hover:bg-neutral-50 dark:hover:bg-neutral-800"
+                  }`}
+                >
+                  Low
+                </button>
+              </div>
+            </div>
 
             {/* Actions bar */}
             <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between border-t border-natural-panel pt-4">

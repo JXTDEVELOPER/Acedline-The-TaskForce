@@ -133,6 +133,7 @@ export default function App() {
             description: data.description || "",
             dueDate: data.dueDate || undefined,
             completed: !!data.completed,
+            priority: data.priority,
             googleEventId: data.googleEventId || null,
             meetLink: data.meetLink || null,
             googleTaskId: data.googleTaskId || null,
@@ -185,7 +186,8 @@ export default function App() {
     dueDate?: string,
     addMeet?: boolean,
     addGoogleTask?: boolean,
-    registrationFields?: any[]
+    registrationFields?: any[],
+    priority?: "high" | "medium" | "low"
   ) => {
     if (!user) return;
     setIsSyncing(true);
@@ -216,6 +218,7 @@ export default function App() {
           description,
           dueDate,
           completed: false,
+          priority,
           createdAt: new Date(),
           updatedAt: new Date(),
         };
@@ -236,6 +239,7 @@ export default function App() {
           description,
           dueDate,
           completed: false,
+          priority,
           meetLink,
           googleTaskId,
           createdAt: new Date(),
@@ -258,6 +262,7 @@ export default function App() {
         description: description || null,
         dueDate: dueDate || null,
         completed: false,
+        priority: priority || null,
         googleEventId: googleEventId || null,
         meetLink: meetLink || null,
         googleTaskId: googleTaskId || null,
@@ -288,6 +293,7 @@ export default function App() {
           description: description || null,
           dueDate: dueDate || null,
           completed: false,
+          priority: priority,
           googleEventId: googleEventId || null,
           meetLink: meetLink || null,
           googleTaskId: googleTaskId || null,
@@ -805,7 +811,14 @@ export default function App() {
           </div>
         </div>
         ) : (
-          <SelfDirectedActivityDashboard user={user} />
+          <SelfDirectedActivityDashboard 
+            user={user} 
+            tasks={tasks}
+            token={token}
+            calendarEvents={calendarEvents}
+            onAddTask={handleAddTask}
+            onFetchCalendarEvents={handleFetchCalendarEvents}
+          />
         )}
       </main>
 
