@@ -71,28 +71,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onAddTask, isSyncing, worksp
     recognition.onresult = async (event: any) => {
       setIsDictating(false);
       const transcript = event.results[0][0].transcript;
-      
-      // Parse the dictated text using Gemini
-      try {
-        const res = await fetch("/api/parse-dictation", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text: transcript }),
-        });
-        
-        if (res.ok) {
-          const data = await res.json();
-          if (data.title) setTitle(data.title);
-          if (data.dueDate || data.dueTime) setHasDueDate(true);
-          if (data.dueDate) setDueDateStr(data.dueDate);
-          if (data.dueTime) setDueTimeStr(data.dueTime);
-        } else {
-          setTitle(transcript);
-        }
-      } catch (err) {
-        console.error("Dictation parsing failed", err);
-        setTitle(transcript); // Fallback to just the raw transcript
-      }
+      setAiPrompt((prev) => (prev ? prev + " " + transcript : transcript));
     };
 
     recognition.onerror = (event: any) => {
@@ -261,14 +240,27 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onAddTask, isSyncing, worksp
               <Sparkles className="h-4 w-4 text-natural-accent" />
               Analyze event details and generate registration forms with AI:
             </label>
-            <textarea
-              id="ai-event-prompt-textarea"
-              value={aiPrompt}
-              onChange={(e) => setAiPrompt(e.target.value)}
-              placeholder="e.g., Schedule an expert panel discussion on June 10 at 4pm. Sync a Google Meet link and generate a sign-up form requesting their name, twitter handles, and areas of interest."
-              rows={3}
-              className="w-full rounded-2xl border border-natural-border p-3.5 text-xs text-natural-text-dark outline-none bg-white transition-all focus:ring-1 focus:ring-natural-accent focus:border-natural-accent resize-none placeholder:text-gray-400"
-            />
+            <div className="relative">
+              <textarea
+                id="ai-event-prompt-textarea"
+                value={aiPrompt}
+                onChange={(e) => setAiPrompt(e.target.value)}
+                placeholder="e.g., Schedule an expert panel discussion on June 10 at 4pm. Sync a Google Meet link and generate a sign-up form requesting their name, twitter handles, and areas of interest."
+                rows={3}
+                className="w-full rounded-2xl border border-natural-border p-3.5 pr-10 text-xs text-natural-text-dark outline-none bg-white transition-all focus:ring-1 focus:ring-natural-accent focus:border-natural-accent resize-none placeholder:text-gray-400"
+              />
+              <button
+                type="button"
+                onClick={handleDictate}
+                disabled={isDictating}
+                title="Dictate prompt"
+                className={`absolute right-3 top-3 p-1.5 rounded-full transition-colors ${
+                  isDictating ? 'text-red-500 bg-red-50 animate-pulse' : 'text-natural-text-secondary hover:bg-natural-accent/10 hover:text-natural-accent'
+                }`}
+              >
+                <Mic className="w-4 h-4" />
+              </button>
+            </div>
             
             <p className="text-[10px] text-natural-text-secondary leading-relaxed">
               💡 Gemini parses task fields, dates, links, and builds standard RSVP signup parameters in one continuous flow.
@@ -318,17 +310,6 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onAddTask, isSyncing, worksp
                 className="w-full border-0 border-b border-transparent bg-transparent py-1 pr-20 text-lg font-medium text-natural-text-dark placeholder-natural-text-secondary/60 focus:border-natural-accent/30 focus:outline-hidden"
               />
               <div className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center">
-                <button
-                  type="button"
-                  onClick={handleDictate}
-                  disabled={isDictating}
-                  title="Dictate task (auto-fills title and date)"
-                  className={`p-1.5 rounded-full transition-colors ${
-                    isDictating ? 'text-red-500 bg-red-50 animate-pulse' : 'text-natural-text-secondary hover:bg-natural-accent/10 hover:text-natural-accent'
-                  }`}
-                >
-                  <Mic className="w-4 h-4" />
-                </button>
                 {title.trim().length > 2 && (
                   <button
                     type="button"
