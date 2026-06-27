@@ -19,6 +19,8 @@ A highly polished, modern single-page task management application built with **R
   - 🎓 **Google Classroom**: Provision new Classroom courses for larger projects.
   - 📋 **Google Forms**: Create customizable dynamic sign-up questionnaires and feedback forms.
 - **Google Calendar Sync**: Creating a task with a deadline automatically creates a corresponding Google Calendar event on your synced accounts.
+- **Dedicated Calendar View**: Easily view, manage, and add tasks directly from an integrated calendar dashboard view. Tasks are color-coded by their designated priority.
+- **Google Classroom Integration**: Sync your active coursework seamlessly. The application imports active Google Classroom coursework and aligns it into your unified tasks list.
 - **Google Meet Generation**: Create official virtual Google Meet video conference links directly from the task interface with one click.
 - **Google Tasks Integration**: Synced tasks are bound directly to your Google Account’s default list, letting you toggle task completion statuses, modify descriptions, and delete events seamlessly between platforms.
 - **Destructive Safety Guards**: Beautiful, soft custom modal Overlays guard destructive delete operations on synced Workspace elements to prevent accidental data loss.
@@ -132,6 +134,8 @@ Since Firebase handles user sign-in via Google, a Google Developer Console proje
      - `https://www.googleapis.com/auth/spreadsheets`
      - `https://www.googleapis.com/auth/keep`
      - `https://www.googleapis.com/auth/classroom.courses`
+     - `https://www.googleapis.com/auth/classroom.courses.readonly`
+     - `https://www.googleapis.com/auth/classroom.coursework.me.readonly`
      - `https://www.googleapis.com/auth/drive`
    - Add your own Google Account as a **Test User** (highly critical if the application is still in "Testing" mode on the consent page). Save changes.
 

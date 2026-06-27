@@ -97,8 +97,26 @@ export async function updateGoogleTask(task: Task, accessToken: string): Promise
 }
 
 /**
- * Deletes an existing Google Task.
+ * Lists Google Tasks from the default list.
  */
+export async function listGoogleTasks(accessToken: string): Promise<any[]> {
+  const url = "https://tasks.googleapis.com/tasks/v1/lists/@default/tasks?showCompleted=true&showHidden=true&maxResults=100";
+  const response = await fetch(url, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errText = await response.text();
+    console.error("Google Tasks List Error:", errText);
+    throw new Error(`Failed to list Google Tasks: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  return data.items || [];
+}
 export async function deleteGoogleTask(googleTaskId: string, accessToken: string): Promise<void> {
   const url = `https://tasks.googleapis.com/tasks/v1/lists/@default/tasks/${googleTaskId}`;
   const response = await fetch(url, {

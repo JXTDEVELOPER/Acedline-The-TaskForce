@@ -10,25 +10,39 @@ interface TaskFormProps {
     addMeet?: boolean,
     addGoogleTask?: boolean,
     registrationFields?: any[],
-    priority?: "high" | "medium" | "low"
+    priority?: "high" | "medium" | "low",
+    assigneeEmail?: string,
+    workspaceTypeOverride?: "personal" | "team"
   ) => Promise<void>;
   isSyncing: boolean;
+  workspaceType: "personal" | "team";
+  allowWorkspaceSelection?: boolean;
+  initialDate?: string; // YYYY-MM-DD
 }
 
-export const TaskForm: React.FC<TaskFormProps> = ({ onAddTask, isSyncing }) => {
+export const TaskForm: React.FC<TaskFormProps> = ({ onAddTask, isSyncing, workspaceType, allowWorkspaceSelection, initialDate }) => {
   // Mode selection: manual input vs AI prompt scheduler
   const [mode, setMode] = useState<"manual" | "ai">("manual");
   
   // Manual form states
+  const [selectedWorkspace, setSelectedWorkspace] = useState<"personal" | "team">(workspaceType);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [hasDueDate, setHasDueDate] = useState(false);
-  const [dueDateStr, setDueDateStr] = useState("");
+  const [hasDueDate, setHasDueDate] = useState(!!initialDate);
+  const [dueDateStr, setDueDateStr] = useState(initialDate || "");
   const [dueTimeStr, setDueTimeStr] = useState("");
   const [priority, setPriority] = useState<"high" | "medium" | "low" | undefined>(undefined);
+  const [assigneeEmail, setAssigneeEmail] = useState("");
   const [addMeet, setAddMeet] = useState(false);
   const [addGoogleTask, setAddGoogleTask] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  React.useEffect(() => {
+    if (initialDate) {
+      setHasDueDate(true);
+      setDueDateStr(initialDate);
+    }
+  }, [initialDate]);
 
   // AI assistant states
   const [aiPrompt, setAiPrompt] = useState("");
@@ -139,7 +153,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onAddTask, isSyncing }) => {
         }
       }
 
-      await onAddTask(title.trim(), description.trim(), finalDueDate, addMeet, addGoogleTask, undefined, priority);
+      await onAddTask(title.trim(), description.trim(), finalDueDate, addMeet, addGoogleTask, undefined, priority, assigneeEmail.trim() || undefined, allowWorkspaceSelection ? selectedWorkspace : undefined);
 
       // Reset values
       setTitle("");
@@ -147,6 +161,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onAddTask, isSyncing }) => {
       setDueDateStr("");
       setDueTimeStr("");
       setPriority(undefined);
+      setAssigneeEmail("");
       setHasDueDate(false);
       setAddMeet(false);
       setAddGoogleTask(false);
@@ -184,7 +199,10 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onAddTask, isSyncing }) => {
         data.dueDate || undefined,
         data.addMeet,
         data.addGoogleTask,
-        data.registrationFields || []
+        data.registrationFields || [],
+        undefined,
+        undefined,
+        allowWorkspaceSelection ? selectedWorkspace : undefined
       );
 
       // Clear prompt input box on successful execution!
@@ -370,6 +388,48 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onAddTask, isSyncing }) => {
                 </div>
               </div>
             ) : null}
+
+            {allowWorkspaceSelection && (
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-natural-text-secondary font-medium">Add to:</span>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedWorkspace("personal")}
+                    className={`px-3 py-1 text-[10px] font-bold rounded-full transition-colors border ${
+                      selectedWorkspace === "personal" 
+                        ? "bg-indigo-50 text-indigo-600 border-indigo-200 dark:bg-indigo-900/30 dark:border-indigo-800" 
+                        : "bg-transparent text-natural-text-secondary border-natural-border hover:bg-neutral-50 dark:hover:bg-neutral-800"
+                    }`}
+                  >
+                    Self-Directed (Personal)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedWorkspace("team")}
+                    className={`px-3 py-1 text-[10px] font-bold rounded-full transition-colors border ${
+                      selectedWorkspace === "team" 
+                        ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:border-emerald-800" 
+                        : "bg-transparent text-natural-text-secondary border-natural-border hover:bg-neutral-50 dark:hover:bg-neutral-800"
+                    }`}
+                  >
+                    Event Management (Team)
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {(allowWorkspaceSelection ? selectedWorkspace : workspaceType) === "team" && (
+              <div className="flex flex-col gap-1.5">
+                <input
+                  type="email"
+                  placeholder="Assign to (email address)"
+                  value={assigneeEmail}
+                  onChange={(e) => setAssigneeEmail(e.target.value)}
+                  className="w-full text-sm border-0 bg-transparent placeholder-natural-text-secondary/40 focus:outline-hidden focus:ring-0"
+                />
+              </div>
+            )}
 
             {/* Priority Selection */}
             <div className="flex items-center gap-3">

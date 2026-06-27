@@ -22,6 +22,8 @@ provider.addScope("https://www.googleapis.com/auth/tasks");
 provider.addScope("https://www.googleapis.com/auth/forms.body");
 provider.addScope("https://www.googleapis.com/auth/forms.responses.readonly");
 provider.addScope("https://www.googleapis.com/auth/gmail.send");
+provider.addScope("https://www.googleapis.com/auth/classroom.courses.readonly");
+provider.addScope("https://www.googleapis.com/auth/classroom.coursework.me.readonly");
 
 // Flags and In-Memory Credential Cache
 let isSigningIn = false;

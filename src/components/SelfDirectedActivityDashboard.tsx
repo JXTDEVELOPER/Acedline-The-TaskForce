@@ -25,6 +25,7 @@ interface DashboardProps {
     priority?: "high" | "medium" | "low"
   ) => Promise<void>;
   onFetchCalendarEvents: () => Promise<void>;
+  onSyncGoogleTasks: () => Promise<void>;
 }
 
 export function SelfDirectedActivityDashboard({ 
@@ -33,7 +34,8 @@ export function SelfDirectedActivityDashboard({
   token,
   calendarEvents,
   onAddTask,
-  onFetchCalendarEvents 
+  onFetchCalendarEvents,
+  onSyncGoogleTasks
 }: DashboardProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -243,6 +245,15 @@ export function SelfDirectedActivityDashboard({
             <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
               Prioritize, plan, and execute. Prevent missed deadlines.
             </p>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={onSyncGoogleTasks}
+              className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-full bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50 transition-colors"
+            >
+              <ClipboardList className="h-4 w-4" />
+              Sync from Google Tasks
+            </button>
           </div>
         </header>
 

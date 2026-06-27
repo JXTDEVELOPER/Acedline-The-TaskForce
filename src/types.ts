@@ -10,6 +10,9 @@ export interface Task {
   googleEventId?: string | null;
   meetLink?: string | null;
   googleTaskId?: string | null;
+  workspaceType?: "personal" | "team";
+  assigneeEmail?: string;
+  sharedWith?: string[];
   createdAt: any; // Timestamp or Date
   updatedAt: any; // Timestamp or Date
 }

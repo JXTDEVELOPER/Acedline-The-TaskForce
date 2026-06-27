@@ -127,6 +127,12 @@ export const TaskItem: React.FC<TaskItemProps> = ({
                 </span>
               );
             })()}
+            {task.assigneeEmail && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 border border-purple-200 px-2.5 py-0.5 text-[10px] font-medium text-purple-700">
+                <span className="w-3 h-3 flex items-center justify-center rounded-full bg-purple-200 text-purple-800 font-bold leading-none">@</span>
+                {task.assigneeEmail}
+              </span>
+            )}
             {task.dueDate ? (
               <span className="inline-flex items-center gap-1.5 rounded-full bg-natural-accent-light px-2.5 py-0.5 text-[10px] font-medium text-natural-accent">
                 <CalendarDays className="h-3 w-3" />

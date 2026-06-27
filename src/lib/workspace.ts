@@ -229,3 +229,39 @@ export async function createGoogleClassroom(taskTitle: string, token: string): P
   const data = await res.json();
   return data.alternateLink;
 }
+
+export async function listGoogleClassrooms(token: string): Promise<any[]> {
+  const res = await fetch("https://classroom.googleapis.com/v1/courses?courseStates=ACTIVE", {
+    method: "GET",
+    headers: {
+      "Authorization": `Bearer ${token}`,
+    }
+  });
+
+  if (!res.ok) {
+    const errorText = await res.text();
+    console.error("Failed to list classrooms:", errorText);
+    return [];
+  }
+
+  const data = await res.json();
+  return data.courses || [];
+}
+
+export async function listClassroomCourseWork(courseId: string, token: string): Promise<any[]> {
+  const res = await fetch(`https://classroom.googleapis.com/v1/courses/${courseId}/courseWork`, {
+    method: "GET",
+    headers: {
+      "Authorization": `Bearer ${token}`,
+    }
+  });
+
+  if (!res.ok) {
+    const errorText = await res.text();
+    console.error(`Failed to list courseWork for course ${courseId}:`, errorText);
+    return [];
+  }
+
+  const data = await res.json();
+  return data.courseWork || [];
+}

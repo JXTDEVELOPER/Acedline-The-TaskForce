@@ -28,29 +28,38 @@ service cloud.firestore {
     }
 
     function isValidTask(task) {
-      return task.keys().hasAll(['id', 'userId', 'title', 'completed', 'createdAt', 'updatedAt'])
-        && task.keys().size() <= 11
+      return task.keys().hasAll(['id', 'title', 'completed', 'createdAt', 'updatedAt'])
         && task.id is string && task.id.size() <= 128
-        && task.userId is string && task.userId == request.auth.uid
         && task.title is string && task.title.size() >= 1 && task.title.size() <= 200
         && (!task.keys().hasAny(['description']) || task.description == null || (task.description is string && task.description.size() <= 2000))
         && (!task.keys().hasAny(['dueDate']) || task.dueDate == null || (task.dueDate is string && task.dueDate.size() <= 100))
         && task.completed is bool
+        && (!task.keys().hasAny(['priority']) || task.priority == null || (task.priority in ['high', 'medium', 'low']))
+        && (!task.keys().hasAny(['stage']) || task.stage == null || task.stage is string)
         && (!task.keys().hasAny(['googleEventId']) || task.googleEventId == null || (task.googleEventId is string && task.googleEventId.size() <= 128))
         && (!task.keys().hasAny(['meetLink']) || task.meetLink == null || (task.meetLink is string && task.meetLink.size() <= 2083))
         && (!task.keys().hasAny(['googleTaskId']) || task.googleTaskId == null || (task.googleTaskId is string && task.googleTaskId.size() <= 128))
+        && (!task.keys().hasAny(['workspaceType']) || task.workspaceType == null || task.workspaceType in ['personal', 'team'])
+        && (!task.keys().hasAny(['assigneeEmail']) || task.assigneeEmail == null || task.assigneeEmail is string)
+        && (!task.keys().hasAny(['sharedWith']) || task.sharedWith == null || task.sharedWith is list)
         && task.createdAt is timestamp
         && task.updatedAt is timestamp;
     }
 
     match /tasks/{taskId} {
-      allow get, list: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow create: if isVerifiedUser() && isValidId(taskId) && taskId == incoming().id && isValidTask(incoming()) && incoming().createdAt == request.time && incoming().updatedAt == request.time;
-      allow update: if isVerifiedUser() && isValidId(taskId) && isValidTask(incoming()) && existing().userId == request.auth.uid && incoming().userId == request.auth.uid && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time && (
-        // Action: Toggle completion status, updated Google Meet link, or updated Google Task ID
-        incoming().diff(existing()).affectedKeys().hasOnly(['completed', 'meetLink', 'googleTaskId', 'updatedAt'])
+      allow get, list: if isSignedIn() && (
+        resource.data.userId == request.auth.uid || 
+        (request.auth.token.email in resource.data.get('sharedWith', []))
       );
-      allow delete: if isVerifiedUser() && existing().userId == request.auth.uid;
+      allow create: if isVerifiedUser() && isValidId(taskId) && taskId == incoming().id && isValidTask(incoming()) && incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser() && isValidId(taskId) && isValidTask(incoming()) && (
+        existing().userId == request.auth.uid || 
+        (existing().sharedWith != null && request.auth.token.email in existing().sharedWith)
+      ) && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time;
+      allow delete: if isVerifiedUser() && (
+        existing().userId == request.auth.uid || 
+        (existing().sharedWith != null && request.auth.token.email in existing().sharedWith)
+      );
     }
 
     match /registration_forms/{taskId} {

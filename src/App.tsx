@@ -10,6 +10,7 @@ import {
   updateDoc,
   deleteDoc,
   serverTimestamp,
+  or
 } from "firebase/firestore";
 import {
   db,
@@ -26,7 +27,7 @@ import {
   listCalendarEvents,
 } from "./lib/calendar";
 import { createMeetSpace } from "./lib/meet";
-import { createGoogleTask, updateGoogleTask, deleteGoogleTask } from "./lib/tasks";
+import { createGoogleTask, updateGoogleTask, deleteGoogleTask, listGoogleTasks } from "./lib/tasks";
 import { Task } from "./types";
 import { GsiButton } from "./components/GsiButton";
 import { TaskForm } from "./components/TaskForm";
@@ -34,8 +35,10 @@ import { TaskItem } from "./components/TaskItem";
 import { RegistrationPage } from "./components/RegistrationPage";
 import { RegistrationFormBuilder } from "./components/RegistrationFormBuilder";
 import { SelfDirectedActivityDashboard } from "./components/SelfDirectedActivityDashboard";
+import { ClassroomDashboard } from "./components/ClassroomDashboard";
+import { CalendarDashboard } from "./components/CalendarDashboard";
 import { KanbanBoard } from "./components/KanbanBoard";
-import { LogOut, CalendarCheck2, LayoutList, RefreshCcw, AlertTriangle, Calendar, Sun, Moon, Menu, X, ChevronLeft, ChevronRight, Target, Columns } from "lucide-react";
+import { LogOut, CalendarCheck2, LayoutList, RefreshCcw, AlertTriangle, Calendar, Sun, Moon, Menu, X, ChevronLeft, ChevronRight, Target, Columns, GraduationCap, CalendarDays } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 
 export default function App() {
@@ -50,7 +53,7 @@ export default function App() {
   const [registerTaskId, setRegisterTaskId] = useState<string | null>(null);
   const [taskToManageRegistration, setTaskToManageRegistration] = useState<Task | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [activeView, setActiveView] = useState<"event-management" | "self-directed">("event-management");
+  const [activeView, setActiveView] = useState<"event-management" | "self-directed" | "classroom" | "calendar">("event-management");
   const [viewMode, setViewMode] = useState<"list" | "kanban">("list");
 
   // Theme support
@@ -120,13 +123,17 @@ export default function App() {
     }
 
     setLoading(true);
-    const q = query(collection(db, "tasks"), where("userId", "==", user.uid));
+    
+    let unsubscribeOwned: () => void;
+    let unsubscribeShared: (() => void) | undefined;
 
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        const list: Task[] = [];
-        snapshot.forEach((docSnap) => {
+    const handleSnapshot = (ownedSnapshot?: any, sharedSnapshot?: any) => {
+      const list: Task[] = [];
+      const seen = new Set<string>();
+
+      const processDoc = (docSnap: any) => {
+        if (!seen.has(docSnap.id)) {
+          seen.add(docSnap.id);
           const data = docSnap.data();
           list.push({
             id: docSnap.id,
@@ -136,15 +143,39 @@ export default function App() {
             dueDate: data.dueDate || undefined,
             completed: !!data.completed,
             priority: data.priority,
+            stage: data.stage,
+            workspaceType: data.workspaceType,
+            assigneeEmail: data.assigneeEmail,
+            sharedWith: data.sharedWith || [],
             googleEventId: data.googleEventId || null,
             meetLink: data.meetLink || null,
             googleTaskId: data.googleTaskId || null,
             createdAt: data.createdAt,
             updatedAt: data.updatedAt,
           });
-        });
-        setTasks(list);
-        setLoading(false);
+        }
+      };
+
+      if (ownedSnapshot) {
+        ownedSnapshot.forEach(processDoc);
+      }
+      if (sharedSnapshot) {
+        sharedSnapshot.forEach(processDoc);
+      }
+
+      setTasks(list);
+      setLoading(false);
+    };
+
+    let latestOwnedSnapshot: any = null;
+    let latestSharedSnapshot: any = null;
+
+    const qOwned = query(collection(db, "tasks"), where("userId", "==", user.uid));
+    unsubscribeOwned = onSnapshot(
+      qOwned,
+      (snapshot) => {
+        latestOwnedSnapshot = snapshot;
+        handleSnapshot(latestOwnedSnapshot, latestSharedSnapshot);
       },
       (error) => {
         handleFirestoreError(error, OperationType.LIST, "tasks");
@@ -152,7 +183,26 @@ export default function App() {
       }
     );
 
-    return () => unsubscribe();
+    if (user.email) {
+      const qShared = query(collection(db, "tasks"), where("sharedWith", "array-contains", user.email));
+      unsubscribeShared = onSnapshot(
+        qShared,
+        (snapshot) => {
+          latestSharedSnapshot = snapshot;
+          handleSnapshot(latestOwnedSnapshot, latestSharedSnapshot);
+        },
+        (error) => {
+          console.error("Error fetching shared tasks:", error);
+        }
+      );
+    }
+
+    return () => {
+      unsubscribeOwned();
+      if (unsubscribeShared) {
+        unsubscribeShared();
+      }
+    };
   }, [user]);
 
   // Handle Google OAuth Sign-in & Refresh Token
@@ -189,7 +239,8 @@ export default function App() {
     addMeet?: boolean,
     addGoogleTask?: boolean,
     registrationFields?: any[],
-    priority?: "high" | "medium" | "low"
+    priority?: "high" | "medium" | "low",
+    assigneeEmail?: string
   ) => {
     if (!user) return;
     setIsSyncing(true);
@@ -199,6 +250,8 @@ export default function App() {
     let meetLink: string | null = null;
     let googleTaskId: string | null = null;
     const tempTaskId = `task-${Date.now()}`;
+    const workspaceType = activeView === 'event-management' ? 'team' : 'personal';
+    const sharedWith = assigneeEmail ? [assigneeEmail] : [];
 
     // 1. Generate Google Meet Link if selected
     if (addMeet && token) {
@@ -221,6 +274,9 @@ export default function App() {
           dueDate,
           completed: false,
           priority,
+          workspaceType,
+          assigneeEmail,
+          sharedWith,
           createdAt: new Date(),
           updatedAt: new Date(),
         };
@@ -244,6 +300,9 @@ export default function App() {
           priority,
           meetLink,
           googleTaskId,
+          workspaceType,
+          assigneeEmail,
+          sharedWith,
           createdAt: new Date(),
           updatedAt: new Date(),
         };
@@ -265,6 +324,9 @@ export default function App() {
         dueDate: dueDate || null,
         completed: false,
         priority: priority || null,
+        workspaceType,
+        assigneeEmail: assigneeEmail || null,
+        sharedWith,
         googleEventId: googleEventId || null,
         meetLink: meetLink || null,
         googleTaskId: googleTaskId || null,
@@ -525,6 +587,7 @@ export default function App() {
         googleEventId: event.id,
         meetLink: meetLink || null,
         googleTaskId: null,
+        workspaceType: activeView === 'event-management' ? 'team' : 'personal',
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
@@ -536,8 +599,103 @@ export default function App() {
     }
   };
 
+  // Action: Sync Tasks from Google Tasks
+  const handleSyncGoogleTasks = async () => {
+    if (!user || !token) return;
+    setIsSyncing(true);
+    setSyncErrorMessage(null);
+    try {
+      const gTasks = await listGoogleTasks(token);
+      for (const gt of gTasks) {
+        // Find if this task already exists
+        const existing = tasks.find(t => t.googleTaskId === gt.id || t.title === gt.title);
+        if (existing) continue;
+
+        const docId = `task-gt-${gt.id}`;
+        let dueDate: string | undefined = undefined;
+        if (gt.due) {
+          dueDate = gt.due;
+        }
+
+        const taskDocRef = doc(db, "tasks", docId);
+        await setDoc(taskDocRef, {
+          id: docId,
+          userId: user.uid,
+          title: gt.title || "Untitled Task",
+          description: gt.notes || null,
+          dueDate: dueDate || null,
+          completed: gt.status === "completed",
+          workspaceType: "personal",
+          googleTaskId: gt.id,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
+      }
+    } catch (err: any) {
+      console.error("Failed to sync Google Tasks:", err);
+      setSyncErrorMessage("Failed to sync Google Tasks. Please try again.");
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const handleSyncClassroomTasks = async () => {
+    if (!user || !token) return;
+    setIsSyncing(true);
+    setSyncErrorMessage(null);
+    try {
+      const { listGoogleClassrooms, listClassroomCourseWork } = await import("./lib/workspace");
+      const fetchedCourses = await listGoogleClassrooms(token);
+      for (const course of fetchedCourses) {
+        const workItems = await listClassroomCourseWork(course.id, token);
+        for (const work of workItems) {
+          const docId = `task-cw-${work.id}`;
+          const existing = tasks.find(t => t.id === docId);
+          if (existing) continue;
+
+          let dueDate: string | undefined = undefined;
+          if (work.dueDate) {
+            dueDate = `${work.dueDate.year}-${String(work.dueDate.month).padStart(2, '0')}-${String(work.dueDate.day).padStart(2, '0')}`;
+          }
+          if (work.dueTime && dueDate) {
+            const time = `${String(work.dueTime.hours || 0).padStart(2, '0')}:${String(work.dueTime.minutes || 0).padStart(2, '0')}:00`;
+            dueDate = `${dueDate}T${time}Z`; // roughly
+          }
+
+          const taskDocRef = doc(db, "tasks", docId);
+          await setDoc(taskDocRef, {
+            id: docId,
+            userId: user.uid,
+            title: `[${course.name}] ${work.title}`,
+            description: work.description || null,
+            dueDate: dueDate || null,
+            completed: false,
+            workspaceType: "personal",
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          });
+        }
+      }
+    } catch (err: any) {
+      console.error("Failed to sync Classroom tasks:", err);
+      setSyncErrorMessage("Failed to sync Google Classroom. Please try again.");
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  // Filter tasks based on activeView
+
+  const filteredTasks = tasks.filter(task => {
+    if (activeView === 'event-management') {
+      return task.workspaceType === 'team' || (task.sharedWith && task.sharedWith.length > 0);
+    } else {
+      return task.workspaceType === 'personal' || !task.workspaceType;
+    }
+  });
+
   // Local Sort Policy: Non-completed tasks with earlier due dates on top, then unscheduled tasks, completed tasks at the bottom.
-  const sortedTasks = [...tasks].sort((a, b) => {
+  const sortedTasks = [...filteredTasks].sort((a, b) => {
     if (a.completed !== b.completed) {
       return a.completed ? 1 : -1;
     }
@@ -551,7 +709,7 @@ export default function App() {
     return b.id.localeCompare(a.id);
   });
 
-  const activeCount = tasks.filter((t) => !t.completed).length;
+  const activeCount = filteredTasks.filter((t) => !t.completed).length;
 
   // Render Registration page for public guests if requested via query parameter
   if (registerTaskId) {
@@ -661,9 +819,28 @@ export default function App() {
             <Target className="h-5 w-5 shrink-0" />
             {isSidebarOpen && <span className="whitespace-nowrap">Self-Directed Activity</span>}
           </a>
+          <a
+            href="#"
+            onClick={(e) => { e.preventDefault(); setActiveView("classroom"); }}
+            className={`flex items-center rounded-xl font-medium transition-colors ${activeView === "classroom" ? "bg-natural-accent-light text-natural-accent" : "text-natural-text-secondary hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-natural-text-primary"} ${isSidebarOpen ? "gap-3 px-3 py-2 text-sm" : "justify-center p-2"}`}
+            title={!isSidebarOpen ? "Classroom" : undefined}
+          >
+            <GraduationCap className="h-5 w-5 shrink-0" />
+            {isSidebarOpen && <span className="whitespace-nowrap">Classroom</span>}
+          </a>
+          <a
+            href="#"
+            onClick={(e) => { e.preventDefault(); setActiveView("calendar"); }}
+            className={`flex items-center rounded-xl font-medium transition-colors ${activeView === "calendar" ? "bg-natural-accent-light text-natural-accent" : "text-natural-text-secondary hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-natural-text-primary"} ${isSidebarOpen ? "gap-3 px-3 py-2 text-sm" : "justify-center p-2"}`}
+            title={!isSidebarOpen ? "Calendar" : undefined}
+          >
+            <CalendarDays className="h-5 w-5 shrink-0" />
+            {isSidebarOpen && <span className="whitespace-nowrap">Calendar</span>}
+          </a>
         </nav>
 
         <div className={`mt-auto pt-6 border-t border-natural-border flex flex-col gap-4 ${!isSidebarOpen && "items-center"}`}>
+
           <div className={`flex items-center gap-3 ${!isSidebarOpen && "justify-center"}`}>
             {user.photoURL ? (
               <img
@@ -796,7 +973,11 @@ export default function App() {
             )}
 
             {/* Insert task Form */}
-            <TaskForm onAddTask={handleAddTask} isSyncing={isSyncing} />
+            <TaskForm 
+              onAddTask={handleAddTask} 
+              isSyncing={isSyncing} 
+              workspaceType={activeView === "event-management" ? "team" : "personal"} 
+            />
 
             {/* View Mode Toggle */}
             <div className="flex justify-end mt-6 mb-2">
@@ -870,14 +1051,27 @@ export default function App() {
             </div>
           </div>
         </div>
+        ) : activeView === "classroom" ? (
+          <ClassroomDashboard
+            user={user}
+            token={token}
+            onSyncClassroomTasks={handleSyncClassroomTasks}
+          />
+        ) : activeView === "calendar" ? (
+          <CalendarDashboard
+            tasks={filteredTasks}
+            onAddTask={handleAddTask}
+            isSyncing={isSyncing}
+          />
         ) : (
           <SelfDirectedActivityDashboard 
             user={user} 
-            tasks={tasks}
+            tasks={filteredTasks}
             token={token}
             calendarEvents={calendarEvents}
             onAddTask={handleAddTask}
             onFetchCalendarEvents={handleFetchCalendarEvents}
+            onSyncGoogleTasks={handleSyncGoogleTasks}
           />
         )}
       </main>

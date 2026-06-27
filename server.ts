@@ -63,6 +63,34 @@ async function callGeminiWithRetry<T>(
   }
 }
 
+function getFriendlyErrorMessage(error: any): string {
+  const errorMessage = error instanceof Error ? error.message : String(error);
+  const lowerMessage = errorMessage.toLowerCase();
+  
+  if (
+    lowerMessage.includes("prepayment") ||
+    lowerMessage.includes("credits are depleted") ||
+    lowerMessage.includes("billing") ||
+    lowerMessage.includes("resource_exhausted") ||
+    lowerMessage.includes("quota exceeded") ||
+    lowerMessage.includes("429") ||
+    (error?.status === 429) ||
+    (error?.code === 429)
+  ) {
+    return "Your Google AI Studio billing or prepayment credits are depleted. Please check your project and billing settings at https://ai.studio/projects. In the meantime, you can continue using the application manually without AI features.";
+  }
+  
+  if (
+    lowerMessage.includes("api key not valid") ||
+    lowerMessage.includes("api_key_invalid") ||
+    lowerMessage.includes("api key")
+  ) {
+    return "Gemini API key is invalid or missing. Please configure a valid API key in your AI Studio settings.";
+  }
+  
+  return errorMessage;
+}
+
 // API endpoint to parse natural language scheduling and registration prompts using Gemini
 app.post("/api/parse-event-prompt", async (req, res) => {
   try {
@@ -164,7 +192,7 @@ Given a natural language scheduling prompt, analyze the instructions and extract
   } catch (error: any) {
     console.error("AI scheduling parser error:", error);
     return res.status(500).json({
-      error: error instanceof Error ? error.message : String(error),
+      error: getFriendlyErrorMessage(error),
     });
   }
 });
@@ -245,7 +273,7 @@ Make sure to always have safe default registration questions, like Full Name and
   } catch (error: any) {
     console.error("AI dynamic form generation error:", error);
     return res.status(500).json({
-      error: error instanceof Error ? error.message : String(error),
+      error: getFriendlyErrorMessage(error),
     });
   }
 });
@@ -361,15 +389,8 @@ app.post("/api/productivity-coach", async (req, res) => {
     return res.json({ reply: response.text });
   } catch (error: any) {
     console.error("Productivity coach error:", error);
-    
-    // Check if error is related to API key
-    let errorMessage = error instanceof Error ? error.message : String(error);
-    if (errorMessage.includes("API key not valid") || errorMessage.includes("API_KEY_INVALID")) {
-      errorMessage = "Gemini API key is invalid or missing. Please configure a valid API key in your AI Studio settings.";
-    }
-
     return res.status(500).json({
-      error: errorMessage,
+      error: getFriendlyErrorMessage(error),
     });
   }
 });
@@ -406,11 +427,7 @@ If it is possible, provide a clear, step-by-step action plan to complete the tas
     return res.json({ instructions: response.text });
   } catch (error: any) {
     console.error("Action plan generation error:", error);
-    let errorMessage = error instanceof Error ? error.message : String(error);
-    if (errorMessage.includes("API key not valid") || errorMessage.includes("API_KEY_INVALID")) {
-      errorMessage = "Gemini API key is invalid or missing.";
-    }
-    return res.status(500).json({ error: errorMessage });
+    return res.status(500).json({ error: getFriendlyErrorMessage(error) });
   }
 });
 
@@ -461,7 +478,7 @@ Output ONLY a JSON object with:
     return res.json(data);
   } catch (error: any) {
     console.error("Parse dictation error:", error);
-    return res.status(500).json({ error: "Failed to parse dictation" });
+    return res.status(500).json({ error: getFriendlyErrorMessage(error) });
   }
 });
 
@@ -510,7 +527,7 @@ Do not output any markdown formatting (like \`\`\`json), just the raw JSON objec
     return res.json(data);
   } catch (error: any) {
     console.error("Smart autofill error:", error);
-    return res.status(500).json({ error: "Failed to generate suggestions" });
+    return res.status(500).json({ error: getFriendlyErrorMessage(error) });
   }
 });
 
