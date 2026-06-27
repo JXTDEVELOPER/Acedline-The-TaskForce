@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Plus, Calendar, Clock, Sparkles, Video, ListTodo, Mic } from "lucide-react";
+import { Plus, Calendar, Clock, Sparkles, Video, ListTodo, Mic, Info, Link as LinkIcon, X, Copy, Check } from "lucide-react";
 import { Task } from "../types";
 
 interface TaskFormProps {
@@ -33,9 +33,32 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onAddTask, isSyncing, worksp
   const [dueTimeStr, setDueTimeStr] = useState("");
   const [priority, setPriority] = useState<"high" | "medium" | "low" | undefined>(undefined);
   const [assigneeEmail, setAssigneeEmail] = useState("");
+  const [showAssignInput, setShowAssignInput] = useState(false);
+  const [isCoHost, setIsCoHost] = useState(false);
+  const [savedPeople, setSavedPeople] = useState<string[]>([]);
   const [addMeet, setAddMeet] = useState(false);
+  const [showMeetPopup, setShowMeetPopup] = useState(false);
+  const meetLink = "https://meet.google.com/xyz-abcd-efg";
   const [addGoogleTask, setAddGoogleTask] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
+
+  React.useEffect(() => {
+    const saved = localStorage.getItem("savedPeople");
+    if (saved) {
+      try {
+        setSavedPeople(JSON.parse(saved));
+      } catch (e) {
+        console.error("Failed to parse saved people", e);
+      }
+    }
+  }, []);
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(meetLink);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
+  };
 
   React.useEffect(() => {
     if (initialDate) {
@@ -129,6 +152,15 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onAddTask, isSyncing, worksp
         } else {
           // Store pure date
           finalDueDate = dueDateStr;
+        }
+      }
+
+      if (assigneeEmail.trim()) {
+        const email = assigneeEmail.trim();
+        if (!savedPeople.includes(email)) {
+          const newSaved = [...savedPeople, email];
+          setSavedPeople(newSaved);
+          localStorage.setItem("savedPeople", JSON.stringify(newSaved));
         }
       }
 
@@ -401,14 +433,43 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onAddTask, isSyncing, worksp
             )}
 
             {(allowWorkspaceSelection ? selectedWorkspace : workspaceType) === "team" && (
-              <div className="flex flex-col gap-1.5">
-                <input
-                  type="email"
-                  placeholder="Assign to (email address)"
-                  value={assigneeEmail}
-                  onChange={(e) => setAssigneeEmail(e.target.value)}
-                  className="w-full text-sm border-0 bg-transparent placeholder-natural-text-secondary/40 focus:outline-hidden focus:ring-0"
-                />
+              <div className="flex flex-col gap-1.5 py-1">
+                {(!showAssignInput && !assigneeEmail) ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowAssignInput(true)}
+                    className="flex items-center gap-1.5 w-fit px-3 py-1.5 text-xs font-medium rounded-full bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 transition-colors text-natural-text-secondary hover:text-natural-text-primary"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    Add People
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-2 relative">
+                    <input
+                      type="email"
+                      placeholder="Assign to (email address)"
+                      value={assigneeEmail}
+                      onChange={(e) => setAssigneeEmail(e.target.value)}
+                      autoFocus
+                      list="saved-people"
+                      className="flex-1 text-sm border-0 bg-transparent placeholder-natural-text-secondary/40 focus:outline-hidden focus:ring-0"
+                    />
+                    <datalist id="saved-people">
+                      {savedPeople.map(p => <option key={p} value={p} />)}
+                    </datalist>
+                    {assigneeEmail && addMeet && (
+                      <label className="flex items-center gap-1.5 cursor-pointer bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 px-2 py-1.5 rounded-md font-medium shrink-0 transition-colors hover:bg-blue-100 dark:hover:bg-blue-900/50">
+                        <input
+                          type="checkbox"
+                          checked={isCoHost}
+                          onChange={(e) => setIsCoHost(e.target.checked)}
+                          className="w-3.5 h-3.5 text-blue-600 border-blue-300 rounded-sm focus:ring-blue-500 bg-white"
+                        />
+                        <span className="text-xs">Co-host</span>
+                      </label>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
@@ -469,33 +530,66 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onAddTask, isSyncing, worksp
                   {hasDueDate ? "Remove Deadline" : "Add Deadline & Sync"}
                 </button>
 
-                <button
-                  id="toggle-meet-btn"
-                  type="button"
-                  onClick={() => setAddMeet(!addMeet)}
-                  className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
-                    addMeet
-                      ? "bg-blue-600 text-white"
-                      : "bg-blue-50 text-blue-600 hover:bg-blue-100"
-                  }`}
+                <label
+                  htmlFor="toggle-meet-checkbox"
+                  className="flex items-center gap-2 cursor-pointer group rounded-full px-3 py-1.5 transition-all duration-200 hover:bg-neutral-100 dark:hover:bg-neutral-800"
                 >
-                  <Video className="h-3.5 w-3.5" />
-                  {addMeet ? "Google Meet Added" : "Add Google Meet"}
-                </button>
+                  <div className="relative flex items-center">
+                    <input
+                      id="toggle-meet-checkbox"
+                      type="checkbox"
+                      className="sr-only peer"
+                      checked={addMeet}
+                      onChange={(e) => {
+                        setAddMeet(e.target.checked);
+                        if (e.target.checked) {
+                          setShowMeetPopup(true);
+                        } else {
+                          setShowMeetPopup(false);
+                        }
+                      }}
+                    />
+                    <div className="w-8 h-4 bg-neutral-300 dark:bg-neutral-600 rounded-full peer peer-checked:after:translate-x-4 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-blue-500"></div>
+                  </div>
+                  <span className={`text-xs font-medium flex items-center gap-1.5 transition-colors ${addMeet ? 'text-blue-600 dark:text-blue-400' : 'text-natural-text-secondary'}`}>
+                    <Video className="h-3.5 w-3.5" />
+                    {addMeet ? "Google Meet Added" : "Add Google Meet"}
+                  </span>
+                  {addMeet && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setShowMeetPopup(true);
+                      }}
+                      className="text-blue-500 hover:text-blue-700 ml-1"
+                      title="View Meet Link"
+                    >
+                      <Info className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </label>
 
-                <button
-                  id="toggle-tasks-btn"
-                  type="button"
-                  onClick={() => setAddGoogleTask(!addGoogleTask)}
-                  className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
-                    addGoogleTask
-                      ? "bg-emerald-600 text-white"
-                      : "bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
-                  }`}
+                <label
+                  htmlFor="toggle-tasks-checkbox"
+                  className="flex items-center gap-2 cursor-pointer group rounded-full px-3 py-1.5 transition-all duration-200 hover:bg-neutral-100 dark:hover:bg-neutral-800"
                 >
-                  <ListTodo className="h-3.5 w-3.5" />
-                  {addGoogleTask ? "Google Task Added" : "Sync Google Task"}
-                </button>
+                  <div className="relative flex items-center">
+                    <input
+                      id="toggle-tasks-checkbox"
+                      type="checkbox"
+                      className="sr-only peer"
+                      checked={addGoogleTask}
+                      onChange={() => setAddGoogleTask(!addGoogleTask)}
+                    />
+                    <div className="w-8 h-4 bg-neutral-300 dark:bg-neutral-600 rounded-full peer peer-checked:after:translate-x-4 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-emerald-500"></div>
+                  </div>
+                  <span className={`text-xs font-medium flex items-center gap-1.5 transition-colors ${addGoogleTask ? 'text-emerald-600 dark:text-emerald-400' : 'text-natural-text-secondary'}`}>
+                    <ListTodo className="h-3.5 w-3.5" />
+                    {addGoogleTask ? "Google Task Added" : "Sync Google Task"}
+                  </span>
+                </label>
               </div>
 
               <button
@@ -514,6 +608,49 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onAddTask, isSyncing, worksp
             </div>
           </div>
         </form>
+      )}
+
+      {showMeetPopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white dark:bg-[#0b0b0c] border border-natural-border rounded-2xl shadow-xl w-full max-w-sm relative flex flex-col">
+            <div className="p-4 border-b border-natural-border flex items-center justify-between">
+              <h3 className="font-semibold text-sm flex items-center gap-2">
+                <Video className="w-4 h-4 text-blue-500" /> Google Meet Link
+              </h3>
+              <button 
+                onClick={() => setShowMeetPopup(false)}
+                className="text-xs font-medium text-natural-text-secondary hover:text-natural-text-primary p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-6 flex flex-col gap-4">
+              <p className="text-sm text-natural-text-secondary">
+                A Google Meet link will be generated and attached to this task:
+              </p>
+              <div className="flex items-center gap-3 p-3 bg-neutral-50 dark:bg-neutral-900 rounded-xl border border-natural-border">
+                <LinkIcon className="w-4 h-4 text-blue-500 shrink-0" />
+                <span className="text-sm font-medium text-blue-600 dark:text-blue-400 break-all flex-1">
+                  {meetLink}
+                </span>
+                <button
+                  type="button"
+                  onClick={handleCopyLink}
+                  className="p-1.5 text-natural-text-secondary hover:text-natural-text-primary hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded-md transition-colors"
+                  title="Copy Link"
+                >
+                  {isCopied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+                </button>
+              </div>
+              <button
+                onClick={() => setShowMeetPopup(false)}
+                className="mt-2 w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-medium transition-colors"
+              >
+                Got it
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

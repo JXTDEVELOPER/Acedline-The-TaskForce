@@ -38,7 +38,7 @@ import { SelfDirectedActivityDashboard } from "./components/SelfDirectedActivity
 import { ClassroomDashboard } from "./components/ClassroomDashboard";
 import { CalendarDashboard } from "./components/CalendarDashboard";
 import { KanbanBoard } from "./components/KanbanBoard";
-import { LogOut, CalendarCheck2, LayoutList, RefreshCcw, AlertTriangle, Calendar, Sun, Moon, Menu, X, ChevronLeft, ChevronRight, Target, Columns, GraduationCap, CalendarDays } from "lucide-react";
+import { LogOut, CalendarCheck2, LayoutList, RefreshCcw, AlertTriangle, Calendar, Sun, Moon, Menu, X, ChevronLeft, ChevronRight, Target, Columns, GraduationCap, CalendarDays, Plus } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 
 export default function App() {
@@ -86,6 +86,7 @@ export default function App() {
   const [loadingCalendar, setLoadingCalendar] = useState(false);
   const [calendarError, setCalendarError] = useState<string | null>(null);
   const [importingEventIds, setImportingEventIds] = useState<string[]>([]);
+  const [isAddingEvent, setIsAddingEvent] = useState(false);
 
   // Load Registration route parameter
   useEffect(() => {
@@ -914,6 +915,14 @@ export default function App() {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
+                  onClick={() => setIsAddingEvent(true)}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-natural-accent text-white border border-transparent px-3 py-1.5 text-xs font-bold hover:bg-natural-accent-hover transition-all active:scale-95 cursor-pointer"
+                >
+                  <Plus className="h-3 w-3" />
+                  Create Task
+                </button>
+                <button
+                  type="button"
                   onClick={handleFetchCalendarEvents}
                   disabled={loadingCalendar}
                   className="inline-flex items-center gap-1.5 rounded-full bg-natural-accent-light/60 border border-natural-border px-3 py-1.5 text-xs font-bold text-natural-accent hover:bg-natural-accent-light hover:text-natural-accent-hover transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
@@ -973,11 +982,31 @@ export default function App() {
             )}
 
             {/* Insert task Form */}
-            <TaskForm 
-              onAddTask={handleAddTask} 
-              isSyncing={isSyncing} 
-              workspaceType={activeView === "event-management" ? "team" : "personal"} 
-            />
+            {isAddingEvent && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+                <div className="bg-white dark:bg-[#0b0b0c] border border-natural-border rounded-2xl shadow-xl w-full max-w-3xl relative flex flex-col max-h-[90vh]">
+                  <div className="p-4 border-b border-natural-border flex items-center justify-between">
+                    <h3 className="font-semibold text-sm text-natural-text-dark">Create a New Event Task</h3>
+                    <button 
+                      onClick={() => setIsAddingEvent(false)}
+                      className="text-xs font-medium text-natural-text-secondary hover:text-natural-text-primary p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
+                    >
+                      Close
+                    </button>
+                  </div>
+                  <div className="p-4 overflow-y-auto">
+                    <TaskForm 
+                      onAddTask={async (...args) => {
+                        await handleAddTask(...args);
+                        setIsAddingEvent(false);
+                      }} 
+                      isSyncing={isSyncing} 
+                      workspaceType={activeView === "event-management" ? "team" : "personal"} 
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* View Mode Toggle */}
             <div className="flex justify-end mt-6 mb-2">
@@ -1059,7 +1088,7 @@ export default function App() {
           />
         ) : activeView === "calendar" ? (
           <CalendarDashboard
-            tasks={filteredTasks}
+            tasks={tasks}
             onAddTask={handleAddTask}
             isSyncing={isSyncing}
           />

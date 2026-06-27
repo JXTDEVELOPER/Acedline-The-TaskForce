@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import { User } from "firebase/auth";
-import { Target, Send, Loader2, Calendar as CalendarIcon, FileText, Mail, AlertCircle, Clock, Table, StickyNote, GraduationCap, ClipboardList, BrainCircuit } from "lucide-react";
+import { Target, Send, Loader2, Calendar as CalendarIcon, FileText, Mail, Clock, Table, StickyNote, GraduationCap, ClipboardList, BrainCircuit, ListTodo, Plus } from "lucide-react";
 import Markdown from "react-markdown";
 import { Task, getDynamicPriority } from "../types";
 import { createGoogleDocWithInstructions, draftEmailWithInstructions, createGoogleSlidesPresentation, createGoogleSheetForTask, createGoogleKeepNote, createGoogleForm, createGoogleClassroom } from "../lib/workspace";
+import { TaskForm } from "./TaskForm";
 
 interface Message {
   role: "user" | "model";
@@ -42,12 +43,10 @@ export function SelfDirectedActivityDashboard({
   const [isLoading, setIsLoading] = useState(false);
   const [isDrafting, setIsDrafting] = useState<string | null>(null);
   const [deepThinking, setDeepThinking] = useState(false);
+  const [isAddingTask, setIsAddingTask] = useState(false);
 
   // Filter tasks into priorities (only incomplete tasks)
   const incompleteTasks = tasks.filter(t => !t.completed);
-  const highPriority = incompleteTasks.filter(t => getDynamicPriority(t) === "high");
-  const mediumPriority = incompleteTasks.filter(t => getDynamicPriority(t) === "medium");
-  const lowPriority = incompleteTasks.filter(t => getDynamicPriority(t) === "low");
 
   // Live Calendar (upcoming 24 hours)
   const now = new Date();
@@ -261,48 +260,40 @@ export function SelfDirectedActivityDashboard({
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 shrink-0">
           
           {/* Priorities Board */}
-          <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4">
-            
-            {/* High Priority (Red) */}
-            <div className="bg-red-50/50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/50 rounded-2xl p-4 flex flex-col max-h-[500px]">
-              <h3 className="text-red-800 dark:text-red-400 font-bold mb-4 flex items-center gap-2">
-                <AlertCircle className="w-4 h-4" /> Immediate Action (High)
+          <div className="lg:col-span-3 bg-white dark:bg-[#111112] border border-neutral-200 dark:border-neutral-800 rounded-2xl p-5 flex flex-col max-h-[500px]">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
+                <ListTodo className="w-4 h-4 text-blue-600" /> All Tasks
               </h3>
-              <div className="overflow-y-auto flex-1 pr-1">
-                {highPriority.length === 0 ? (
-                  <p className="text-xs text-red-600/60 p-4 text-center">No immediate tasks.</p>
-                ) : (
-                  highPriority.map(task => renderTaskCard(task, "border-red-200 bg-red-50/80 text-red-900", "High"))
-                )}
-              </div>
+              <button
+                onClick={() => setIsAddingTask(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-natural-accent text-white rounded-lg hover:bg-natural-accent-hover transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Add Task
+              </button>
             </div>
-
-            {/* Medium Priority (Yellow) */}
-            <div className="bg-yellow-50/50 dark:bg-yellow-950/20 border border-yellow-100 dark:border-yellow-900/50 rounded-2xl p-4 flex flex-col max-h-[500px]">
-              <h3 className="text-yellow-800 dark:text-yellow-500 font-bold mb-4">
-                Upcoming (Medium)
-              </h3>
-              <div className="overflow-y-auto flex-1 pr-1">
-                {mediumPriority.length === 0 ? (
-                  <p className="text-xs text-yellow-700/60 p-4 text-center">No medium priority tasks.</p>
-                ) : (
-                  mediumPriority.map(task => renderTaskCard(task, "border-yellow-200 bg-yellow-50/80 text-yellow-900", "Med"))
-                )}
-              </div>
-            </div>
-
-            {/* Low Priority (Green) */}
-            <div className="bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/50 rounded-2xl p-4 flex flex-col max-h-[500px]">
-              <h3 className="text-emerald-800 dark:text-emerald-500 font-bold mb-4">
-                Backlog (Low)
-              </h3>
-              <div className="overflow-y-auto flex-1 pr-1">
-                {lowPriority.length === 0 ? (
-                  <p className="text-xs text-emerald-700/60 p-4 text-center">No low priority tasks.</p>
-                ) : (
-                  lowPriority.map(task => renderTaskCard(task, "border-emerald-200 bg-emerald-50/80 text-emerald-900", "Low"))
-                )}
-              </div>
+            <div className="overflow-y-auto flex-1 pr-1">
+              {incompleteTasks.length === 0 ? (
+                <p className="text-xs text-neutral-500 p-4 text-center">No tasks available.</p>
+              ) : (
+                incompleteTasks.map(task => {
+                  const priority = getDynamicPriority(task);
+                  let colorClass = "";
+                  let badgeText = "";
+                  if (priority === "high") {
+                    colorClass = "border-red-200 bg-red-50/80 text-red-900 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-400";
+                    badgeText = "High";
+                  } else if (priority === "medium") {
+                    colorClass = "border-yellow-200 bg-yellow-50/80 text-yellow-900 dark:border-yellow-900/50 dark:bg-yellow-900/20 dark:text-yellow-500";
+                    badgeText = "Med";
+                  } else {
+                    colorClass = "border-emerald-200 bg-emerald-50/80 text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-900/20 dark:text-emerald-500";
+                    badgeText = "Low";
+                  }
+                  return renderTaskCard(task, colorClass, badgeText);
+                })
+              )}
             </div>
           </div>
 
@@ -408,6 +399,33 @@ export function SelfDirectedActivityDashboard({
             </form>
           </div>
         </div>
+
+        {isAddingTask && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+            <div className="bg-white dark:bg-[#0b0b0c] border border-natural-border rounded-2xl shadow-xl w-full max-w-3xl relative flex flex-col max-h-[90vh]">
+              <div className="p-4 border-b border-natural-border flex items-center justify-between">
+                <h3 className="font-semibold text-sm">Add New Task</h3>
+                <button 
+                  onClick={() => setIsAddingTask(false)}
+                  className="text-xs font-medium text-natural-text-secondary hover:text-natural-text-primary p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+              <div className="p-4 overflow-y-auto">
+                <TaskForm
+                  onAddTask={async (...args) => {
+                    await onAddTask(...args);
+                    setIsAddingTask(false);
+                  }}
+                  isSyncing={false}
+                  workspaceType="personal"
+                  allowWorkspaceSelection={true}
+                />
+              </div>
+            </div>
+          </div>
+        )}
 
       </div>
     </div>

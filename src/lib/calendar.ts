@@ -18,11 +18,9 @@ function getEventTiming(dueDate: string): {
     return {
       start: {
         dateTime: startDate.toISOString(),
-        timeZone: localTimeZone,
       },
       end: {
         dateTime: endDate.toISOString(),
-        timeZone: localTimeZone,
       },
     };
   } else {

@@ -75,28 +75,6 @@ export function CalendarDashboard({ tasks, onAddTask, isSyncing }: CalendarDashb
           </div>
         </header>
 
-        {selectedDate && (
-          <div className="mb-6 p-4 bg-white dark:bg-[#0b0b0c] border border-natural-border rounded-2xl shadow-sm relative">
-            <button 
-              onClick={() => setSelectedDate(null)}
-              className="absolute top-4 right-4 text-xs font-medium text-natural-text-secondary hover:text-natural-text-primary"
-            >
-              Close
-            </button>
-            <h3 className="font-semibold text-sm mb-4">Add Task for {format(parseISO(selectedDate), "MMMM d, yyyy")}</h3>
-            <TaskForm
-              onAddTask={async (...args) => {
-                await onAddTask(...args);
-                setSelectedDate(null);
-              }}
-              isSyncing={isSyncing}
-              workspaceType="personal"
-              allowWorkspaceSelection={true}
-              initialDate={selectedDate}
-            />
-          </div>
-        )}
-
         <div className="flex-1 bg-white dark:bg-[#0b0b0c] border border-natural-border rounded-2xl shadow-sm overflow-hidden flex flex-col">
           <div className="grid grid-cols-7 border-b border-natural-border bg-neutral-50/50 dark:bg-neutral-900/20">
             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
@@ -148,6 +126,34 @@ export function CalendarDashboard({ tasks, onAddTask, isSyncing }: CalendarDashb
             })}
           </div>
         </div>
+
+        {selectedDate && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+            <div className="bg-white dark:bg-[#0b0b0c] border border-natural-border rounded-2xl shadow-xl w-full max-w-3xl relative flex flex-col max-h-[90vh]">
+              <div className="p-4 border-b border-natural-border flex items-center justify-between">
+                <h3 className="font-semibold text-sm">Add Task for {format(parseISO(selectedDate), "MMMM d, yyyy")}</h3>
+                <button 
+                  onClick={() => setSelectedDate(null)}
+                  className="text-xs font-medium text-natural-text-secondary hover:text-natural-text-primary p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+              <div className="p-4 overflow-y-auto">
+                <TaskForm
+                  onAddTask={async (...args) => {
+                    await onAddTask(...args);
+                    setSelectedDate(null);
+                  }}
+                  isSyncing={isSyncing}
+                  workspaceType="personal"
+                  allowWorkspaceSelection={true}
+                  initialDate={selectedDate}
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
