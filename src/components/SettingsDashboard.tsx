@@ -186,6 +186,107 @@ export function SettingsDashboard({ onOpenDebug, settings, updateSettings }: Set
             </div>
           </section>
 
+          <section className="mt-8 pt-6 border-t border-natural-border">
+            <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-4 px-1">Theme & Appearance</h3>
+            <p className="text-sm text-neutral-500 mb-4 px-1">Customize the look and feel of Taskspace.</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-5 bg-white dark:bg-[#111112] border border-neutral-200 dark:border-neutral-800 rounded-xl">
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">Background Color</label>
+                <div className="flex gap-2">
+                  <input
+                    type="color"
+                    className="h-9 w-9 shrink-0 rounded border border-natural-border p-0.5 bg-natural-panel dark:bg-[#1D1B1A] cursor-pointer"
+                    value={settings.theme?.backgroundColor || '#f4f4f5'}
+                    onChange={(e) => updateSettings({ theme: { ...settings.theme, backgroundColor: e.target.value } })}
+                  />
+                  <input
+                    type="text"
+                    placeholder="e.g. #f4f4f5"
+                    className="flex-1 w-full bg-natural-panel dark:bg-[#1D1B1A] border border-natural-border rounded-lg p-2 text-sm text-natural-text-dark focus:ring-2 focus:ring-indigo-500"
+                    value={settings.theme?.backgroundColor || ''}
+                    onChange={(e) => updateSettings({ theme: { ...settings.theme, backgroundColor: e.target.value } })}
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">Panel/Card Color</label>
+                <div className="flex gap-2">
+                  <input
+                    type="color"
+                    className="h-9 w-9 shrink-0 rounded border border-natural-border p-0.5 bg-natural-panel dark:bg-[#1D1B1A] cursor-pointer"
+                    value={settings.theme?.panelColor || '#ffffff'}
+                    onChange={(e) => updateSettings({ theme: { ...settings.theme, panelColor: e.target.value } })}
+                  />
+                  <input
+                    type="text"
+                    placeholder="e.g. #ffffff"
+                    className="flex-1 w-full bg-natural-panel dark:bg-[#1D1B1A] border border-natural-border rounded-lg p-2 text-sm text-natural-text-dark focus:ring-2 focus:ring-indigo-500"
+                    value={settings.theme?.panelColor || ''}
+                    onChange={(e) => updateSettings({ theme: { ...settings.theme, panelColor: e.target.value } })}
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">Accent/Banner Color</label>
+                <div className="flex gap-2">
+                  <input
+                    type="color"
+                    className="h-9 w-9 shrink-0 rounded border border-natural-border p-0.5 bg-natural-panel dark:bg-[#1D1B1A] cursor-pointer"
+                    value={settings.theme?.accentColor || '#7D8471'}
+                    onChange={(e) => updateSettings({ theme: { ...settings.theme, accentColor: e.target.value } })}
+                  />
+                  <input
+                    type="text"
+                    placeholder="e.g. #7D8471"
+                    className="flex-1 w-full bg-natural-panel dark:bg-[#1D1B1A] border border-natural-border rounded-lg p-2 text-sm text-natural-text-dark focus:ring-2 focus:ring-indigo-500"
+                    value={settings.theme?.accentColor || ''}
+                    onChange={(e) => updateSettings({ theme: { ...settings.theme, accentColor: e.target.value } })}
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">Font Color</label>
+                <div className="flex gap-2">
+                  <input
+                    type="color"
+                    className="h-9 w-9 shrink-0 rounded border border-natural-border p-0.5 bg-natural-panel dark:bg-[#1D1B1A] cursor-pointer"
+                    value={settings.theme?.fontColor || '#2C2825'}
+                    onChange={(e) => updateSettings({ theme: { ...settings.theme, fontColor: e.target.value } })}
+                  />
+                  <input
+                    type="text"
+                    placeholder="e.g. #2C2825"
+                    className="flex-1 w-full bg-natural-panel dark:bg-[#1D1B1A] border border-natural-border rounded-lg p-2 text-sm text-natural-text-dark focus:ring-2 focus:ring-indigo-500"
+                    value={settings.theme?.fontColor || ''}
+                    onChange={(e) => updateSettings({ theme: { ...settings.theme, fontColor: e.target.value } })}
+                  />
+                </div>
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">Font Style</label>
+                <select
+                  className="w-full bg-natural-panel dark:bg-[#1D1B1A] border border-natural-border rounded-lg p-2 text-sm text-natural-text-dark focus:ring-2 focus:ring-indigo-500"
+                  value={settings.theme?.fontFamily || 'Inter'}
+                  onChange={(e) => updateSettings({ theme: { ...settings.theme, fontFamily: e.target.value as any } })}
+                >
+                  <option value="Inter">Inter (Default)</option>
+                  <option value="system-ui">System</option>
+                  <option value="serif">Serif</option>
+                  <option value="monospace">Monospace</option>
+                </select>
+              </div>
+              <div className="md:col-span-2 pt-2 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => updateSettings({ theme: { backgroundColor: '', panelColor: '', accentColor: '', fontColor: '', fontFamily: 'Inter' } })}
+                  className="text-xs text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1.5 rounded-md"
+                >
+                  Reset to defaults
+                </button>
+              </div>
+            </div>
+          </section>
+
           {onOpenDebug && (
             <section className="mt-8 pt-6 border-t border-natural-border">
               <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-4 px-1">Developer Tools</h3>

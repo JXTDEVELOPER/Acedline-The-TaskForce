@@ -45,6 +45,10 @@ export function OverdueTasksBanner({ tasks, isSyncing }: OverdueTasksBannerProps
         />
         <button
           type="button"
+          onClick={() => {
+            alert(`AI Prompt submitted: ${prompt}\n\n(AI Agent would now reschedule these tasks based on your availability)`);
+            setPrompt("");
+          }}
           disabled={isSyncing || !prompt.trim()}
           className="bg-red-600 text-white rounded-lg px-3 py-1.5 text-xs font-semibold flex items-center gap-1.5 hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
         >

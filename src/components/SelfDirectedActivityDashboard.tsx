@@ -5,6 +5,7 @@ import Markdown from "react-markdown";
 import { Task } from "../types";
 import { createGoogleDocWithInstructions, draftEmailWithInstructions, createGoogleSlidesPresentation, createGoogleSheetForTask, createGoogleKeepNote, createGoogleForm, createGoogleClassroom } from "../lib/workspace";
 import { TaskForm } from "./TaskForm";
+import { OverdueTasksBanner } from "./OverdueTasksBanner";
 
 import { AppSettings } from '../hooks/useSettings';
 
@@ -33,6 +34,7 @@ interface DashboardProps {
   onSyncGoogleTasks: () => Promise<void>;
   onToggleComplete?: (task: Task) => Promise<void>;
   settings?: AppSettings;
+  isSyncing?: boolean;
 }
 
 export function SelfDirectedActivityDashboard({ 
@@ -44,7 +46,8 @@ export function SelfDirectedActivityDashboard({
   onFetchCalendarEvents,
   onSyncGoogleTasks,
   onToggleComplete,
-  settings
+  settings,
+  isSyncing = false
 }: DashboardProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -327,6 +330,9 @@ export function SelfDirectedActivityDashboard({
             </button>
           </div>
         </header>
+
+        {/* Overdue Tasks Banner */}
+        <OverdueTasksBanner tasks={tasks} isSyncing={isSyncing} />
 
         {/* Top Section: Dashboard Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 shrink-0">

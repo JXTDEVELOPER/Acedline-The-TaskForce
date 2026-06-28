@@ -2,6 +2,16 @@ import { useState, useEffect } from 'react';
 
 export type DashboardView = "event-management" | "self-directed" | "classroom" | "calendar" | "boards";
 
+export type FontStyle = 'Inter' | 'system-ui' | 'serif' | 'monospace';
+
+export interface ThemeSettings {
+  backgroundColor?: string;
+  panelColor?: string;
+  accentColor?: string;
+  fontColor?: string;
+  fontFamily?: FontStyle;
+}
+
 export interface AppSettings {
   enableAiCoach: boolean;
   enableAiEmailDrafter: boolean;
@@ -13,6 +23,7 @@ export interface AppSettings {
   enableAiClassroom: boolean;
   sidebarOrder: DashboardView[];
   sidebarVisibility: Record<DashboardView, boolean>;
+  theme?: ThemeSettings;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -31,6 +42,13 @@ const DEFAULT_SETTINGS: AppSettings = {
     "classroom": true,
     "calendar": true,
     "boards": true,
+  },
+  theme: {
+    backgroundColor: '',
+    panelColor: '',
+    accentColor: '',
+    fontColor: '',
+    fontFamily: 'Inter',
   }
 };
 

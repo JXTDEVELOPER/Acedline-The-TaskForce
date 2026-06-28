@@ -41,6 +41,8 @@ import { KanbanBoard } from "./components/KanbanBoard";
 import { DebugDashboard } from "./components/DebugDashboard";
 import { SettingsDashboard } from "./components/SettingsDashboard";
 import { OverdueTasksBanner } from "./components/OverdueTasksBanner";
+import { ThemeInjector } from "./components/ThemeInjector";
+import { LoginBackground } from "./components/LoginBackground";
 import { useSettings } from "./hooks/useSettings";
 import { LogOut, CalendarCheck2, LayoutList, RefreshCcw, AlertTriangle, Calendar, Sun, Moon, Menu, X, ChevronLeft, ChevronRight, Target, Columns, GraduationCap, CalendarDays, Plus, Bug, Settings as SettingsIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
@@ -810,39 +812,57 @@ export default function App() {
   // Render Login state
   if (!user) {
     return (
-      <div className="flex min-h-screen flex-col justify-center bg-natural-bg px-6 py-12 antialiased relative">
-        <div className="absolute top-4 right-4 animate-fade-in">
+      <div className="flex min-h-screen flex-col justify-center bg-[#02050f] px-6 py-12 antialiased relative overflow-hidden">
+        <LoginBackground />
+        
+        <div className="absolute top-4 right-4 animate-fade-in z-10">
           <button
             onClick={toggleTheme}
             title={theme === "light" ? "Switch to Night Mode" : "Switch to Light Mode"}
-            className="rounded-full border border-natural-border bg-white p-2.5 text-natural-text-secondary shadow-xs hover:bg-natural-accent-light hover:text-natural-accent transition-all active:scale-95 cursor-pointer"
+            className="rounded-full border border-white/10 bg-white/5 backdrop-blur-md p-2.5 text-white/70 shadow-[0_4_15px_rgba(0,0,0,0.1)] hover:bg-white/10 hover:text-white transition-all active:scale-95 cursor-pointer"
           >
             {theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
           </button>
         </div>
-        <div className="sm:mx-auto sm:w-full sm:max-w-md">
+        
+        <div className="sm:mx-auto sm:w-full sm:max-w-md z-10">
           {/* Minimalist Logo Icon */}
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-natural-accent text-white shadow-xs">
-            <LayoutList className="h-6 w-6" />
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-tr from-cyan-400 to-blue-500 text-white shadow-[0_0_30px_rgba(0,200,255,0.4)]">
+            <LayoutList className="h-7 w-7" />
           </div>
-          <h2 className="mt-6 text-center text-3xl font-semibold tracking-tight text-natural-text-dark font-sans">
+          <h2 className="mt-8 text-center text-4xl font-bold tracking-tight text-white font-sans drop-shadow-md">
             Taskspace
           </h2>
-          <p className="mt-2 text-center text-sm text-natural-text-secondary font-sans font-medium">
+          <p className="mt-3 text-center text-sm text-cyan-100/80 font-sans font-medium max-w-[280px] mx-auto leading-relaxed">
             Declutter your schedule. Automatically sync your tasks and deadlines
             straight to Google Calendar.
           </p>
         </div>
 
-        <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-          <div className="flex flex-col items-center justify-center rounded-2xl bg-white px-8 py-10 border border-natural-border shadow-xs">
+        <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-md z-10">
+          <div className="flex flex-col items-center justify-center rounded-3xl bg-white/5 backdrop-blur-2xl px-8 py-12 border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.2)] relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
             {authChecking ? (
-              <div className="flex flex-col items-center gap-2.5">
-                <span className="h-6 w-6 animate-spin rounded-full border border-neutral-300 border-t-natural-accent" />
-                <span className="text-xs text-natural-text-secondary font-mono">Authenticating...</span>
+              <div className="flex flex-col items-center gap-3">
+                <span className="h-6 w-6 animate-spin rounded-full border-2 border-cyan-400/20 border-t-cyan-400 shadow-[0_0_15px_rgba(0,255,255,0.3)]" />
+                <span className="text-xs text-cyan-200 font-mono tracking-widest uppercase">Authenticating</span>
               </div>
             ) : (
-              <GsiButton onClick={handleSignIn} />
+              <button
+                onClick={handleSignIn}
+                className="group relative flex items-center justify-center gap-3 rounded-2xl border border-white/20 bg-white/10 px-6 py-3.5 text-sm font-semibold text-white shadow-[0_4px_20px_rgba(0,0,0,0.1)] transition-all duration-300 hover:border-cyan-400/50 hover:bg-white/20 hover:shadow-[0_0_30px_rgba(0,200,255,0.3)] hover:-translate-y-0.5 focus:outline-hidden focus:ring-2 focus:ring-cyan-400/50 active:scale-95 cursor-pointer w-full max-w-[280px]"
+              >
+                <div className="h-5 w-5 flex-shrink-0">
+                  <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="block h-full w-full drop-shadow-sm">
+                    <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path>
+                    <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path>
+                    <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path>
+                    <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path>
+                    <path fill="none" d="M0 0h48v48H0z"></path>
+                  </svg>
+                </div>
+                <span>Continue with Google</span>
+              </button>
             )}
           </div>
         </div>
@@ -861,6 +881,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-natural-bg text-natural-text-primary antialiased font-sans flex flex-col md:flex-row">
+      <ThemeInjector theme={settings.theme} />
       {/* Sidebar */}
       <aside className={`transition-all duration-300 ease-in-out border-natural-border bg-white dark:bg-[#0b0b0c] flex flex-col shrink-0 ${isSidebarOpen ? "w-full md:w-64 p-6 md:border-r border-b md:border-b-0" : "w-0 md:w-20 p-0 md:p-4 md:border-r overflow-hidden"} md:h-screen md:sticky md:top-0 relative`}>
         <div 
@@ -1187,6 +1208,7 @@ export default function App() {
             onSyncGoogleTasks={handleSyncGoogleTasks}
             onToggleComplete={handleToggleComplete}
             settings={settings}
+            isSyncing={isSyncing}
           />
         )}
       </main>
