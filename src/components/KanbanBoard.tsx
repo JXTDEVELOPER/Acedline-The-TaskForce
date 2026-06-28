@@ -32,10 +32,8 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   onClearDone,
   isSyncing,
 }) => {
-  const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
-
   const handleDragStart = (e: React.DragEvent, taskId: string) => {
-    setDraggedTaskId(taskId);
+    e.dataTransfer.setData("text/plain", taskId);
     e.dataTransfer.effectAllowed = "move";
   };
 
@@ -46,9 +44,9 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
   const handleDrop = async (e: React.DragEvent, targetStage: string) => {
     e.preventDefault();
-    if (draggedTaskId) {
-      await onUpdateStage(draggedTaskId, targetStage);
-      setDraggedTaskId(null);
+    const taskId = e.dataTransfer.getData("text/plain");
+    if (taskId) {
+      await onUpdateStage(taskId, targetStage);
     }
   };
 
@@ -90,7 +88,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
               {stageTasks.map((task) => (
                 <div
                   key={task.id}
-                  draggable
+                  draggable="true"
                   onDragStart={(e) => handleDragStart(e, task.id)}
                   className="cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow bg-white rounded-xl overflow-hidden border border-natural-border/60"
                 >

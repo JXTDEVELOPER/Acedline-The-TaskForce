@@ -45,7 +45,7 @@ import { LogOut, CalendarCheck2, LayoutList, RefreshCcw, AlertTriangle, Calendar
 import { AnimatePresence, motion } from "motion/react";
 
 export default function App() {
-  const { settings } = useSettings();
+  const { settings, updateSettings } = useSettings();
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -1159,7 +1159,11 @@ export default function App() {
             isSyncing={isSyncing}
           />
         ) : activeView === "settings" ? (
-          <SettingsDashboard onOpenDebug={() => setActiveView("debug")} />
+          <SettingsDashboard 
+            onOpenDebug={() => setActiveView("debug")} 
+            settings={settings}
+            updateSettings={updateSettings}
+          />
         ) : activeView === "debug" ? (
           <DebugDashboard 
             user={user}

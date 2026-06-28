@@ -4,10 +4,11 @@ import { AppSettings, useSettings, DashboardView } from '../hooks/useSettings';
 
 interface SettingsDashboardProps {
   onOpenDebug?: () => void;
+  settings: AppSettings;
+  updateSettings: (newSettings: Partial<AppSettings>) => void;
 }
 
-export function SettingsDashboard({ onOpenDebug }: SettingsDashboardProps) {
-  const { settings, updateSettings } = useSettings();
+export function SettingsDashboard({ onOpenDebug, settings, updateSettings }: SettingsDashboardProps) {
 
   const handleToggle = (key: keyof AppSettings) => {
     // Check if it's a regular boolean setting
@@ -83,6 +84,55 @@ export function SettingsDashboard({ onOpenDebug }: SettingsDashboardProps) {
 
         <div className="space-y-6">
           <section>
+            <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-4 px-1">Sidebar Navigation</h3>
+            <p className="text-sm text-neutral-500 mb-4 px-1">Toggle visibility and reorder your sidebar navigation items.</p>
+            <div className="flex flex-col gap-2">
+              {settings.sidebarOrder.map((view, index) => {
+                const { Icon, label } = getDashboardIconAndLabel(view);
+                const isVisible = settings.sidebarVisibility[view];
+                
+                return (
+                  <div key={view} className="flex items-center justify-between p-3 bg-white dark:bg-[#111112] border border-neutral-200 dark:border-neutral-800 rounded-xl">
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => handleSidebarVisibilityToggle(view)}
+                        className={`p-2 rounded-lg transition-colors ${isVisible ? 'text-indigo-600 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:hover:bg-indigo-900/50 dark:text-indigo-400' : 'text-neutral-400 bg-neutral-50 hover:bg-neutral-100 dark:bg-neutral-800 dark:hover:bg-neutral-700'}`}
+                        title={isVisible ? "Hide in sidebar" : "Show in sidebar"}
+                      >
+                        {isVisible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                      </button>
+                      <div className={`flex items-center gap-2 ${isVisible ? 'text-neutral-900 dark:text-neutral-100' : 'text-neutral-400 dark:text-neutral-500'}`}>
+                        <Icon className="w-4 h-4" />
+                        <span className="font-medium text-sm">{label}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => handleMoveSidebarItem(index, 'up')}
+                        disabled={index === 0}
+                        className="p-1.5 text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 dark:hover:text-neutral-200 rounded-md disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <ArrowUp className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleMoveSidebarItem(index, 'down')}
+                        disabled={index === settings.sidebarOrder.length - 1}
+                        className="p-1.5 text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 dark:hover:text-neutral-200 rounded-md disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <ArrowDown className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+
+          <section className="mt-8 pt-6 border-t border-natural-border">
             <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-4 px-1">AI Features & Integrations</h3>
             <div className="grid grid-cols-1 gap-3">
               <SettingRow 
@@ -133,55 +183,6 @@ export function SettingsDashboard({ onOpenDebug }: SettingsDashboardProps) {
                 description="Allow AI to generate courses in Google Classroom."
                 settingKey="enableAiClassroom"
               />
-            </div>
-          </section>
-
-          <section className="mt-8 pt-6 border-t border-natural-border">
-            <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-4 px-1">Sidebar Navigation</h3>
-            <p className="text-sm text-neutral-500 mb-4 px-1">Toggle visibility and reorder your sidebar navigation items.</p>
-            <div className="flex flex-col gap-2">
-              {settings.sidebarOrder.map((view, index) => {
-                const { Icon, label } = getDashboardIconAndLabel(view);
-                const isVisible = settings.sidebarVisibility[view];
-                
-                return (
-                  <div key={view} className="flex items-center justify-between p-3 bg-white dark:bg-[#111112] border border-neutral-200 dark:border-neutral-800 rounded-xl">
-                    <div className="flex items-center gap-3">
-                      <button
-                        type="button"
-                        onClick={() => handleSidebarVisibilityToggle(view)}
-                        className={`p-2 rounded-lg transition-colors ${isVisible ? 'text-indigo-600 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:hover:bg-indigo-900/50 dark:text-indigo-400' : 'text-neutral-400 bg-neutral-50 hover:bg-neutral-100 dark:bg-neutral-800 dark:hover:bg-neutral-700'}`}
-                        title={isVisible ? "Hide in sidebar" : "Show in sidebar"}
-                      >
-                        {isVisible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                      </button>
-                      <div className={`flex items-center gap-2 ${isVisible ? 'text-neutral-900 dark:text-neutral-100' : 'text-neutral-400 dark:text-neutral-500'}`}>
-                        <Icon className="w-4 h-4" />
-                        <span className="font-medium text-sm">{label}</span>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => handleMoveSidebarItem(index, 'up')}
-                        disabled={index === 0}
-                        className="p-1.5 text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 dark:hover:text-neutral-200 rounded-md disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                      >
-                        <ArrowUp className="w-4 h-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleMoveSidebarItem(index, 'down')}
-                        disabled={index === settings.sidebarOrder.length - 1}
-                        className="p-1.5 text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 dark:hover:text-neutral-200 rounded-md disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                      >
-                        <ArrowDown className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
             </div>
           </section>
 
