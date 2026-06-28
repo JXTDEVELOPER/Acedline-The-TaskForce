@@ -827,13 +827,13 @@ export default function App() {
         
         <div className="sm:mx-auto sm:w-full sm:max-w-md z-10">
           {/* Minimalist Logo Icon */}
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-tr from-cyan-400 to-blue-500 text-white shadow-[0_0_30px_rgba(0,200,255,0.4)]">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#b400ff] text-white shadow-[0_0_30px_rgba(180,0,255,0.4)]">
             <LayoutList className="h-7 w-7" />
           </div>
           <h2 className="mt-8 text-center text-4xl font-bold tracking-tight text-white font-sans drop-shadow-md">
             Taskspace
           </h2>
-          <p className="mt-3 text-center text-sm text-cyan-100/80 font-sans font-medium max-w-[280px] mx-auto leading-relaxed">
+          <p className="mt-3 text-center text-sm text-[#e6b3ff] font-sans font-medium max-w-[280px] mx-auto leading-relaxed">
             Declutter your schedule. Automatically sync your tasks and deadlines
             straight to Google Calendar.
           </p>
@@ -844,13 +844,13 @@ export default function App() {
             <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
             {authChecking ? (
               <div className="flex flex-col items-center gap-3">
-                <span className="h-6 w-6 animate-spin rounded-full border-2 border-cyan-400/20 border-t-cyan-400 shadow-[0_0_15px_rgba(0,255,255,0.3)]" />
-                <span className="text-xs text-cyan-200 font-mono tracking-widest uppercase">Authenticating</span>
+                <span className="h-6 w-6 animate-spin rounded-full border-2 border-[#b400ff]/20 border-t-[#b400ff] shadow-[0_0_15px_rgba(180,0,255,0.3)]" />
+                <span className="text-xs text-[#d373ff] font-mono tracking-widest uppercase">Authenticating</span>
               </div>
             ) : (
               <button
                 onClick={handleSignIn}
-                className="group relative flex items-center justify-center gap-3 rounded-2xl border border-white/20 bg-white/10 px-6 py-3.5 text-sm font-semibold text-white shadow-[0_4px_20px_rgba(0,0,0,0.1)] transition-all duration-300 hover:border-cyan-400/50 hover:bg-white/20 hover:shadow-[0_0_30px_rgba(0,200,255,0.3)] hover:-translate-y-0.5 focus:outline-hidden focus:ring-2 focus:ring-cyan-400/50 active:scale-95 cursor-pointer w-full max-w-[280px]"
+                className="group relative flex items-center justify-center gap-3 rounded-2xl border border-white/20 bg-white/10 px-6 py-3.5 text-sm font-semibold text-white shadow-[0_4px_20px_rgba(0,0,0,0.1)] transition-all duration-300 hover:border-[#b400ff]/50 hover:bg-white/20 hover:shadow-[0_0_30px_rgba(180,0,255,0.3)] hover:-translate-y-0.5 focus:outline-hidden focus:ring-2 focus:ring-[#b400ff]/50 active:scale-95 cursor-pointer w-full max-w-[280px]"
               >
                 <div className="h-5 w-5 flex-shrink-0">
                   <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="block h-full w-full drop-shadow-sm">
@@ -880,20 +880,21 @@ export default function App() {
     .toUpperCase();
 
   return (
-    <div className="min-h-screen bg-natural-bg text-natural-text-primary antialiased font-sans flex flex-col md:flex-row">
+    <div className="min-h-screen bg-[#02050f] text-natural-text-primary dark:text-white antialiased font-sans flex flex-col md:flex-row relative overflow-hidden">
       <ThemeInjector theme={settings.theme} />
+      <LoginBackground />
       {/* Sidebar */}
-      <aside className={`transition-all duration-300 ease-in-out border-natural-border bg-white dark:bg-[#0b0b0c] flex flex-col shrink-0 ${isSidebarOpen ? "w-full md:w-64 p-6 md:border-r border-b md:border-b-0" : "w-0 md:w-20 p-0 md:p-4 md:border-r overflow-hidden"} md:h-screen md:sticky md:top-0 relative`}>
+      <aside className={`transition-all duration-300 ease-in-out border-white/10 bg-black/20 backdrop-blur-2xl flex flex-col shrink-0 z-10 ${isSidebarOpen ? "w-full md:w-64 p-6 md:border-r border-b md:border-b-0" : "w-0 md:w-20 p-0 md:p-4 md:border-r overflow-hidden"} md:h-screen md:sticky md:top-0 relative shadow-[4px_0_24px_rgba(0,0,0,0.5)]`}>
         <div 
           onClick={() => setIsSidebarOpen(!isSidebarOpen)}
           className={`flex items-center gap-2 mb-8 cursor-pointer hover:opacity-80 transition-opacity ${!isSidebarOpen && "justify-center mb-6"}`}
           title={isSidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
         >
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-natural-accent text-white shadow-xs">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#b400ff] text-white shadow-[0_0_15px_rgba(180,0,255,0.4)]">
             <LayoutList className="h-4 w-4" />
           </div>
           {isSidebarOpen && (
-            <span className="text-xl font-semibold tracking-tight text-natural-text-dark whitespace-nowrap">
+            <span className="text-xl font-semibold tracking-tight text-white whitespace-nowrap drop-shadow-md">
               Taskspace
             </span>
           )}
@@ -918,10 +919,10 @@ export default function App() {
                 key={view}
                 href="#"
                 onClick={(e) => { e.preventDefault(); setActiveView(view); }}
-                className={`flex items-center rounded-xl font-medium transition-colors ${activeView === view ? "bg-natural-accent-light text-natural-accent" : "text-natural-text-secondary hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-natural-text-primary"} ${isSidebarOpen ? "gap-3 px-3 py-2 text-sm" : "justify-center p-2"}`}
+                className={`flex items-center rounded-xl font-medium transition-all duration-300 ${activeView === view ? "bg-white/10 text-[#b400ff] shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] border border-white/5" : "text-white/60 hover:bg-white/5 hover:text-white border border-transparent"} ${isSidebarOpen ? "gap-3 px-3 py-2 text-sm" : "justify-center p-2"}`}
                 title={!isSidebarOpen ? label : undefined}
               >
-                <Icon className="h-5 w-5 shrink-0" />
+                <Icon className={`h-5 w-5 shrink-0 ${activeView === view ? "drop-shadow-[0_0_8px_rgba(0,255,255,0.5)]" : ""}`} />
                 {isSidebarOpen && <span className="whitespace-nowrap">{label}</span>}
               </a>
             );
@@ -930,15 +931,15 @@ export default function App() {
           <a
             href="#"
             onClick={(e) => { e.preventDefault(); setActiveView("settings"); }}
-            className={`flex items-center rounded-xl font-medium transition-colors ${activeView === "settings" ? "bg-natural-accent-light text-natural-accent" : "text-natural-text-secondary hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-natural-text-primary"} ${isSidebarOpen ? "gap-3 px-3 py-2 text-sm" : "justify-center p-2"}`}
+            className={`flex items-center rounded-xl font-medium transition-all duration-300 ${activeView === "settings" ? "bg-white/10 text-[#b400ff] shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] border border-white/5" : "text-white/60 hover:bg-white/5 hover:text-white border border-transparent"} ${isSidebarOpen ? "gap-3 px-3 py-2 text-sm" : "justify-center p-2"}`}
             title={!isSidebarOpen ? "Settings" : undefined}
           >
-            <SettingsIcon className="h-5 w-5 shrink-0" />
+            <SettingsIcon className={`h-5 w-5 shrink-0 ${activeView === "settings" ? "drop-shadow-[0_0_8px_rgba(0,255,255,0.5)]" : ""}`} />
             {isSidebarOpen && <span className="whitespace-nowrap">Settings</span>}
           </a>
         </nav>
 
-        <div className={`mt-auto pt-6 border-t border-natural-border flex flex-col gap-4 ${!isSidebarOpen && "items-center"}`}>
+        <div className={`mt-auto pt-6 border-t border-white/10 flex flex-col gap-4 ${!isSidebarOpen && "items-center"}`}>
 
           <div className={`flex items-center gap-3 ${!isSidebarOpen && "justify-center"}`}>
             {user.photoURL ? (
@@ -946,19 +947,19 @@ export default function App() {
                 src={user.photoURL}
                 alt={user.displayName || "Avatar"}
                 referrerPolicy="no-referrer"
-                className="h-9 w-9 shrink-0 rounded-full border border-natural-border"
+                className="h-9 w-9 shrink-0 rounded-full border border-white/20 shadow-md"
               />
             ) : (
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-natural-accent text-xs font-semibold text-white uppercase">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#b400ff] text-xs font-semibold text-white uppercase shadow-[0_0_10px_rgba(180,0,255,0.4)]">
                 {user.displayName?.charAt(0) || "U"}
               </div>
             )}
             {isSidebarOpen && (
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-natural-text-dark truncate">
+                <p className="text-sm font-medium text-white truncate drop-shadow-sm">
                   {user.displayName || "User"}
                 </p>
-                <p className="text-xs text-natural-text-secondary truncate">
+                <p className="text-xs text-white/60 truncate font-mono">
                   {user.email}
                 </p>
               </div>
@@ -969,7 +970,7 @@ export default function App() {
               id="theme-toggle"
               onClick={toggleTheme}
               title={theme === "light" ? "Switch to Night Mode" : "Switch to Light Mode"}
-              className={`flex items-center justify-center gap-2 rounded-lg border border-natural-border bg-white p-2 text-xs font-medium text-natural-text-secondary transition-colors hover:bg-natural-accent-light hover:text-natural-accent cursor-pointer ${isSidebarOpen ? "flex-1" : "w-10 h-10"}`}
+              className={`flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 p-2 text-xs font-medium text-white/70 transition-all hover:bg-white/10 hover:text-white cursor-pointer ${isSidebarOpen ? "flex-1" : "w-10 h-10"}`}
             >
               {theme === "light" ? (
                 <>
@@ -987,7 +988,7 @@ export default function App() {
               id="logout-button"
               onClick={handleSignOut}
               title="Sign out"
-              className={`flex items-center justify-center rounded-lg border border-natural-border bg-white p-2 text-natural-text-secondary transition-colors hover:bg-red-50 hover:text-red-600 hover:border-red-100 cursor-pointer ${!isSidebarOpen && "w-10 h-10"}`}
+              className={`flex items-center justify-center rounded-xl border border-red-500/30 bg-red-500/10 p-2 text-red-400 transition-all hover:bg-red-500/20 hover:text-red-300 hover:border-red-500/50 cursor-pointer ${!isSidebarOpen && "w-10 h-10"}`}
             >
               <LogOut className="h-4 w-4 shrink-0" />
             </button>
@@ -996,7 +997,7 @@ export default function App() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
+      <main className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden z-10 relative">
         {activeView === "event-management" ? (
           <div className="flex-1 overflow-y-auto p-4 md:p-10 lg:p-12">
             <div className="mx-auto max-w-2xl">

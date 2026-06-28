@@ -7,180 +7,174 @@
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 
-  --color-natural-bg: #FDFCFB;
-  --color-natural-panel: #F7F5F2;
-  --color-natural-accent: #7D8471;
-  --color-natural-accent-hover: #6c7360;
-  --color-natural-accent-light: #F1EDE9;
-  --color-natural-text-primary: #4A443F;
-  --color-natural-text-secondary: #A09489;
-  --color-natural-text-dark: #2C2825;
-  --color-natural-border: #E8E4E1;
-  --color-natural-gold: #D4C3A1;
+  --color-natural-bg: transparent;
+  --color-natural-panel: rgba(255, 255, 255, 0.05);
+  --color-natural-accent: #b400ff;
+  --color-natural-accent-hover: #9b00de;
+  --color-natural-accent-light: rgba(180, 0, 255, 0.15);
+  --color-natural-text-primary: rgba(255, 255, 255, 0.8);
+  --color-natural-text-secondary: rgba(255, 255, 255, 0.5);
+  --color-natural-text-dark: #ffffff;
+  --color-natural-border: rgba(255, 255, 255, 0.1);
+  --color-natural-gold: rgba(180, 0, 255, 0.4);
 }
 
-/* Custom dark mode implementation */
-.dark {
-  --color-natural-bg: #141312;
-  --color-natural-panel: #1D1B1A;
-  --color-natural-accent: #9BA48D;
-  --color-natural-accent-hover: #B4BDA6;
-  --color-natural-accent-light: #2A2825;
-  --color-natural-text-primary: #CCC4BC;
-  --color-natural-text-secondary: #8E8377;
-  --color-natural-text-dark: #ECE7E1;
-  --color-natural-border: #2D2A28;
-  --color-natural-gold: #B4A381;
+/* Force global theme overrides for glassmorphism and neon violet */
+body {
+  background-color: transparent !important;
+  color: #ffffff !important;
+}
+
+/* Override all solid backgrounds to be glassy */
+.bg-white,
+.dark\:bg-white,
+.bg-neutral-50,
+.dark\:bg-neutral-50,
+.bg-neutral-100,
+.dark\:bg-neutral-100,
+.bg-neutral-900,
+.dark\:bg-neutral-900,
+.bg-neutral-950,
+.dark\:bg-neutral-950,
+.bg-gray-50,
+.dark\:bg-gray-50,
+.bg-\[\#F7F5F2\],
+.dark\:bg-\[\#F7F5F2\],
+.bg-\[\#FAF9F6\],
+.dark\:bg-\[\#FAF9F6\],
+.bg-\[\#0b0b0c\],
+.dark\:bg-\[\#0b0b0c\],
+.bg-\[\#111112\],
+.dark\:bg-\[\#111112\] {
+  background-color: rgba(255, 255, 255, 0.03) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Ensure text contrasts well */
+.text-neutral-900,
+.text-neutral-800,
+.text-neutral-700,
+.text-gray-900,
+.text-natural-text-primary,
+.text-natural-text-dark {
+  color: #ffffff !important;
+}
+
+.text-neutral-600,
+.text-neutral-500,
+.text-gray-500,
+.text-gray-600,
+.text-natural-text-secondary {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+/* Borders */
+.border-natural-border,
+.border-neutral-100,
+.border-neutral-200,
+.border-gray-200,
+.border-neutral-300,
+.border-neutral-800,
+.border-neutral-900 {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Map specific brand colors to Violet */
+.bg-blue-600,
+.bg-indigo-600 {
+  background-color: #b400ff !important;
+  box-shadow: 0 0 15px rgba(180, 0, 255, 0.4) !important;
+  color: #ffffff !important;
+  border-color: transparent !important;
+}
+.hover\:bg-blue-700:hover,
+.hover\:bg-indigo-700:hover {
+  background-color: #9b00de !important;
+  box-shadow: 0 0 25px rgba(180, 0, 255, 0.6) !important;
+}
+
+/* Neon Violet Glows */
+.shadow-xs,
+.shadow-sm,
+.shadow-md,
+.shadow-xl,
+.shadow-2xl {
+  box-shadow: 0 4px 24px rgba(180, 0, 255, 0.05) !important;
+}
+
+.bg-natural-accent {
+  background-color: var(--color-natural-accent) !important;
+  box-shadow: 0 0 15px rgba(180, 0, 255, 0.4) !important;
+  color: #ffffff !important;
+  border-color: transparent !important;
+}
+
+.bg-natural-accent:hover {
+  background-color: var(--color-natural-accent-hover) !important;
+  box-shadow: 0 0 25px rgba(180, 0, 255, 0.6) !important;
+}
+
+.text-natural-accent {
+  color: var(--color-natural-accent) !important;
+  text-shadow: 0 0 8px rgba(180, 0, 255, 0.4) !important;
+}
+
+.border-natural-accent {
+  border-color: var(--color-natural-accent) !important;
+  box-shadow: 0 0 10px rgba(180, 0, 255, 0.2) inset !important;
+}
+
+/* Override inputs */
+input, textarea, select {
+  background-color: rgba(0, 0, 0, 0.2) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: var(--color-natural-accent) !important;
+  box-shadow: 0 0 0 2px rgba(180, 0, 255, 0.3) !important;
+  outline: none !important;
+}
+
+input::placeholder, textarea::placeholder {
+  color: rgba(255, 255, 255, 0.3) !important;
+}
+
+/* Red alerts and banners glassy */
+.bg-red-50, .bg-red-100 {
+  background-color: rgba(255, 0, 0, 0.1) !important;
+  backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(255, 0, 0, 0.2) !important;
+  color: #ff8080 !important;
+}
+
+.text-red-600, .text-red-500 {
+  color: #ff8080 !important;
+}
+
+.bg-red-600 {
+  background-color: rgba(255, 0, 0, 0.8) !important;
+  box-shadow: 0 0 15px rgba(255, 0, 0, 0.4) !important;
 }
 
 /* Smooth transition when switching themes */
 * {
-  transition-property: background-color, border-color, text-decoration-color, fill, stroke;
+  transition-property: background-color, border-color, text-decoration-color, fill, stroke, box-shadow;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 200ms;
-}
-
-/* Overriding white fields and backgrounds specifically for dark mode */
-.dark body {
-  background-color: var(--color-natural-bg) !important;
-  color: var(--color-natural-text-primary) !important;
-}
-
-.dark .bg-white {
-  background-color: var(--color-natural-panel) !important;
-}
-
-/* Ensure borders look clean in dark mode */
-.dark .border-neutral-200,
-.dark .border-neutral-350,
-.dark .border-neutral-150,
-.dark .border-neutral-100,
-.dark .border-gray-250,
-.dark .border-gray-300,
-.dark .border-gray-200 {
-  border-color: var(--color-natural-border) !important;
-}
-
-/* Ensure text elements stand out appropriately in dark mode */
-.dark .text-neutral-700,
-.dark .text-neutral-600 {
-  color: var(--color-natural-text-primary) !important;
-}
-
-.dark .text-neutral-500,
-.dark .text-neutral-400 {
-  color: var(--color-natural-text-secondary) !important;
-}
-
-.dark .text-gray-900,
-.dark .text-natural-text-dark {
-  color: var(--color-natural-text-dark) !important;
-}
-
-.dark .text-gray-500,
-.dark .text-gray-400 {
-  color: var(--color-natural-text-secondary) !important;
-}
-
-.dark .bg-neutral-50,
-.dark .bg-neutral-100,
-.dark .bg-gray-50,
-.dark .bg-gray-100 {
-  background-color: var(--color-natural-bg) !important;
-}
-
-.dark .hover\:bg-neutral-50:hover,
-.dark .hover\:bg-neutral-100:hover,
-.dark .hover\:bg-neutral-200:hover,
-.dark .hover\:bg-gray-50:hover,
-.dark .hover\:bg-\[\#FAF9F6\]:hover {
-  background-color: var(--color-natural-bg) !important;
-}
-
-/* Style inputs to adapt natively in dark mode */
-.dark input,
-.dark textarea,
-.dark select {
-  background-color: var(--color-natural-bg) !important;
-  color: var(--color-natural-text-dark) !important;
-  border-color: var(--color-natural-border) !important;
-}
-
-.dark input::placeholder,
-.dark textarea::placeholder {
-  color: var(--color-natural-text-secondary) !important;
-}
-
-/* Specific background styles for widgets */
-.dark .bg-\[\#FAF9F6\],
-.dark .bg-\[\#FAF9F6\]\/55,
-.dark .bg-\[\#FBFBFA\],
-.dark .bg-\[\#F7F5F2\],
-.dark .bg-\[\#F2F4EE\] {
-  background-color: var(--color-natural-bg) !important;
-}
-
-.dark .bg-\[\#F2F4EE\]\/60 {
-  background-color: rgba(155, 164, 141, 0.12) !important;
-}
-
-/* purple highlights from google forms adapt for elegant nighttime purple/lilac glow */
-.dark .bg-purple-50\/20,
-.dark .bg-purple-50\/15,
-.dark .bg-purple-50\/30 {
-  background-color: rgba(155, 164, 141, 0.08) !important;
-  border-color: var(--color-natural-border) !important;
-}
-
-.dark .text-purple-950,
-.dark .text-purple-900 {
-  color: var(--color-natural-text-dark) !important;
-}
-
-.dark .text-purple-900\/85,
-.dark .text-purple-800,
-.dark .text-purple-700,
-.dark .text-purple-700\/85,
-.dark .text-purple-650,
-.dark .text-purple-600,
-.dark .text-purple-500 {
-  color: var(--color-natural-text-secondary) !important;
-}
-
-.dark .border-purple-300,
-.dark .border-purple-200,
-.dark .border-purple-100 {
-  border-color: var(--color-natural-border) !important;
-}
-
-.dark .bg-purple-50 {
-  background-color: var(--color-natural-accent-light) !important;
-}
-
-/* Enable highly readable black contrast on light-colored sage accents inside dark mode */
-.dark .bg-natural-accent,
-.dark .bg-natural-accent-hover {
-  color: #141312 !important;
-}
-
-.dark .bg-natural-accent *,
-.dark .bg-natural-accent-hover * {
-  color: #141312 !important;
-}
-
-.dark .bg-natural-accent .text-white,
-.dark .bg-natural-accent-hover .text-white {
-  color: #141312 !important;
-}
-
-.dark .bg-natural-accent svg,
-.dark .bg-natural-accent-hover svg {
-  stroke: #141312 !important;
+  transition-duration: 300ms;
 }
 
 /* Form selection option style */
-.dark select option {
-  background-color: var(--color-natural-panel);
-  color: var(--color-natural-text-dark);
+select option {
+  background-color: #111112;
+  color: #ffffff;
 }
 
+/* Ensure svg inherit correctly */
+.bg-natural-accent svg {
+  stroke: #ffffff !important;
+}
