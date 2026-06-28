@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React from "react";
 import { Task } from "../types";
 import { TaskItem } from "./TaskItem";
+import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 
 interface KanbanBoardProps {
   tasks: Task[];
@@ -32,86 +33,103 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   onClearDone,
   isSyncing,
 }) => {
-  const handleDragStart = (e: React.DragEvent, taskId: string) => {
-    e.dataTransfer.setData("text/plain", taskId);
-    e.dataTransfer.effectAllowed = "move";
-  };
+  const handleDragEnd = async (result: DropResult) => {
+    const { destination, source, draggableId } = result;
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault(); // Necessary to allow dropping
-    e.dataTransfer.dropEffect = "move";
-  };
+    if (!destination) return;
 
-  const handleDrop = async (e: React.DragEvent, targetStage: string) => {
-    e.preventDefault();
-    const taskId = e.dataTransfer.getData("text/plain");
-    if (taskId) {
-      await onUpdateStage(taskId, targetStage);
+    if (
+      destination.droppableId === source.droppableId &&
+      destination.index === source.index
+    ) {
+      return;
     }
+
+    await onUpdateStage(draggableId, destination.droppableId);
   };
 
   return (
-    <div className="flex gap-4 overflow-x-auto pb-4 pt-2">
-      {STAGES.map((stage) => {
-        const stageTasks = tasks.filter((t) => {
-          const effectiveStage = t.completed ? "done" : (t.stage === "done" && !t.completed ? "todo" : (t.stage || "todo"));
-          return effectiveStage === stage.id;
-        });
+    <DragDropContext onDragEnd={handleDragEnd}>
+      <div className="flex gap-4 overflow-x-auto pb-4 pt-2">
+        {STAGES.map((stage) => {
+          const stageTasks = tasks.filter((t) => {
+            const effectiveStage = t.completed ? "done" : (t.stage === "done" && !t.completed ? "todo" : (t.stage || "todo"));
+            return effectiveStage === stage.id;
+          });
 
-        return (
-          <div
-            key={stage.id}
-            className="flex flex-col flex-shrink-0 w-80 bg-natural-bg dark:bg-[#151515] rounded-2xl border border-natural-border shadow-xs overflow-hidden h-fit max-h-[75vh]"
-            onDragOver={handleDragOver}
-            onDrop={(e) => handleDrop(e, stage.id)}
-          >
-            <div className="p-4 border-b border-natural-border flex items-center justify-between bg-white dark:bg-[#0b0b0c]">
-              <div className="flex items-center gap-2">
-                <h3 className="font-semibold text-natural-text-dark text-sm">{stage.title}</h3>
-                <span className="bg-natural-accent-light text-natural-accent text-xs font-bold px-2 py-0.5 rounded-full">
-                  {stageTasks.length}
-                </span>
+          return (
+            <div
+              key={stage.id}
+              className="flex flex-col flex-shrink-0 w-80 bg-natural-bg dark:bg-[#151515] rounded-2xl border border-natural-border shadow-xs overflow-hidden h-fit max-h-[75vh]"
+            >
+              <div className="p-4 border-b border-natural-border flex items-center justify-between bg-white dark:bg-[#0b0b0c]">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-semibold text-natural-text-dark text-sm">{stage.title}</h3>
+                  <span className="bg-natural-accent-light text-natural-accent text-xs font-bold px-2 py-0.5 rounded-full">
+                    {stageTasks.length}
+                  </span>
+                </div>
+                {stage.id === "done" && stageTasks.length > 0 && onClearDone && (
+                  <button
+                    type="button"
+                    onClick={onClearDone}
+                    disabled={isSyncing}
+                    className="text-[10px] font-bold text-natural-text-secondary hover:text-red-500 uppercase tracking-wide transition-colors"
+                  >
+                    Clear All
+                  </button>
+                )}
               </div>
-              {stage.id === "done" && stageTasks.length > 0 && onClearDone && (
-                <button
-                  type="button"
-                  onClick={onClearDone}
-                  disabled={isSyncing}
-                  className="text-[10px] font-bold text-natural-text-secondary hover:text-red-500 uppercase tracking-wide transition-colors"
-                >
-                  Clear All
-                </button>
-              )}
+              
+              <Droppable droppableId={stage.id}>
+                {(provided, snapshot) => (
+                  <div 
+                    {...provided.droppableProps}
+                    ref={provided.innerRef}
+                    className={`p-3 overflow-y-auto flex-1 flex flex-col gap-3 min-h-[150px] transition-colors ${
+                      snapshot.isDraggingOver ? "bg-natural-panel/30" : ""
+                    }`}
+                  >
+                    {stageTasks.map((task, index) => (
+                      <Draggable key={task.id} draggableId={task.id} index={index}>
+                        {(provided, snapshot) => (
+                          <div
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            {...provided.dragHandleProps}
+                            className={`rounded-xl overflow-hidden border transition-shadow ${
+                              snapshot.isDragging 
+                                ? "shadow-xl border-natural-accent scale-105 z-50 bg-white" 
+                                : "hover:shadow-md border-natural-border/60 bg-white"
+                            }`}
+                            style={{ ...provided.draggableProps.style }}
+                          >
+                            <TaskItem
+                              task={task}
+                              onToggleComplete={onToggleComplete}
+                              onDelete={onDelete}
+                              onCreateMeet={onCreateMeet}
+                              onCreateGoogleTask={onCreateGoogleTask}
+                              onManageRegistration={onManageRegistration}
+                              isSyncing={isSyncing}
+                            />
+                          </div>
+                        )}
+                      </Draggable>
+                    ))}
+                    {provided.placeholder}
+                    {stageTasks.length === 0 && !snapshot.isDraggingOver && (
+                      <div className="text-center text-xs text-natural-text-secondary py-8 border-2 border-dashed border-natural-border rounded-xl">
+                        Drop tasks here
+                      </div>
+                    )}
+                  </div>
+                )}
+              </Droppable>
             </div>
-            
-            <div className="p-3 overflow-y-auto flex-1 flex flex-col gap-3 min-h-[150px]">
-              {stageTasks.map((task) => (
-                <div
-                  key={task.id}
-                  draggable="true"
-                  onDragStart={(e) => handleDragStart(e, task.id)}
-                  className="cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow bg-white rounded-xl overflow-hidden border border-natural-border/60"
-                >
-                  <TaskItem
-                    task={task}
-                    onToggleComplete={onToggleComplete}
-                    onDelete={onDelete}
-                    onCreateMeet={onCreateMeet}
-                    onCreateGoogleTask={onCreateGoogleTask}
-                    onManageRegistration={onManageRegistration}
-                    isSyncing={isSyncing}
-                  />
-                </div>
-              ))}
-              {stageTasks.length === 0 && (
-                <div className="text-center text-xs text-natural-text-secondary py-8 border-2 border-dashed border-natural-border rounded-xl">
-                  Drop tasks here
-                </div>
-              )}
-            </div>
-          </div>
-        );
-      })}
-    </div>
+          );
+        })}
+      </div>
+    </DragDropContext>
   );
 };

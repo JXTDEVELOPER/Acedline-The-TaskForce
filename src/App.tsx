@@ -40,6 +40,7 @@ import { CalendarDashboard } from "./components/CalendarDashboard";
 import { KanbanBoard } from "./components/KanbanBoard";
 import { DebugDashboard } from "./components/DebugDashboard";
 import { SettingsDashboard } from "./components/SettingsDashboard";
+import { OverdueTasksBanner } from "./components/OverdueTasksBanner";
 import { useSettings } from "./hooks/useSettings";
 import { LogOut, CalendarCheck2, LayoutList, RefreshCcw, AlertTriangle, Calendar, Sun, Moon, Menu, X, ChevronLeft, ChevronRight, Target, Columns, GraduationCap, CalendarDays, Plus, Bug, Settings as SettingsIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
@@ -1057,6 +1058,9 @@ export default function App() {
               </div>
             )}
 
+            {/* Overdue Tasks Banner */}
+            <OverdueTasksBanner tasks={tasks} isSyncing={isSyncing} />
+
             {/* Insert task Form */}
             {isAddingEvent && (
               <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
@@ -1132,6 +1136,7 @@ export default function App() {
                   </p>
                 </div>
               </header>
+              <OverdueTasksBanner tasks={tasks} isSyncing={isSyncing} />
               <KanbanBoard
                 tasks={tasks}
                 onToggleComplete={handleToggleComplete}

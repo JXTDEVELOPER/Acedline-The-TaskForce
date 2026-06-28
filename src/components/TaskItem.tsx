@@ -87,11 +87,16 @@ export const TaskItem: React.FC<TaskItemProps> = ({
     (onManageRegistration && !task.completed)
   );
 
+  // Calculate if the task is overdue
+  const isOverdue = !task.completed && task.dueDate && new Date(task.dueDate).getTime() < new Date().setHours(0, 0, 0, 0);
+
   return (
     <div
       id={`task-item-${task.id}`}
-      className={`group flex items-start gap-4 border-b border-natural-border bg-white py-4 px-3 transition-all duration-200 hover:bg-natural-panel/40 ${
-        task.completed ? "opacity-60" : ""
+      className={`group flex items-start gap-4 border-b py-4 px-3 transition-all duration-200 ${
+        task.completed ? "opacity-60 bg-white border-natural-border" : 
+        isOverdue ? "bg-red-50/50 border-red-200 hover:bg-red-50" : 
+        "bg-white border-natural-border hover:bg-natural-panel/40"
       }`}
     >
       {/* Checkbox trigger */}
@@ -162,9 +167,12 @@ export const TaskItem: React.FC<TaskItemProps> = ({
               </span>
             )}
             {task.dueDate ? (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-natural-accent-light px-2.5 py-0.5 text-[10px] font-medium text-natural-accent">
+              <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-medium ${
+                isOverdue ? "bg-red-100 text-red-700 border border-red-200" : "bg-natural-accent-light text-natural-accent"
+              }`}>
                 <CalendarDays className="h-3 w-3" />
                 {formatDueDate(task.dueDate)}
+                {isOverdue && <span className="ml-1 font-bold">OVERDUE</span>}
               </span>
             ) : null}
 

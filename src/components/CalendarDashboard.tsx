@@ -3,6 +3,7 @@ import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSam
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Plus, Video, ExternalLink, Check } from "lucide-react";
 import { Task } from "../types";
 import { TaskForm } from "./TaskForm";
+import { OverdueTasksBanner } from "./OverdueTasksBanner";
 
 interface CalendarDashboardProps {
   tasks: Task[];
@@ -64,6 +65,7 @@ export function CalendarDashboard({ tasks, onAddTask, onToggleComplete, isSyncin
         
         {/* Main Calendar Section */}
         <div className="flex-1 flex flex-col min-w-0">
+          <OverdueTasksBanner tasks={tasks} isSyncing={isSyncing} />
           <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
             <div>
               <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 mb-1">
