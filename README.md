@@ -25,6 +25,7 @@ A highly polished, modern single-page task management application built with **R
 - **Google Meet Generation**: Create official virtual Google Meet video conference links directly from the task interface with one click.
 - **Google Tasks Integration**: Synced tasks are bound directly to your Google Account’s default list, letting you toggle task completion statuses, modify descriptions, and delete events seamlessly between platforms.
 - **Destructive Safety Guards**: Beautiful, soft custom modal Overlays guard destructive delete operations on synced Workspace elements to prevent accidental data loss.
+- **Customizable UI Settings**: Personalize the application with customizable settings, including an optional WebGL aurora background shader for enhanced aesthetics and performance control.
 
 ---
 

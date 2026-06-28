@@ -48,3 +48,12 @@ This document outlines four potential future improvements for the Google Workspa
 2. **UI Updates:** Add a date/time picker in the "AI Email Drafter" panel for scheduling.
 3. **Gmail API Adjustments:** Instead of immediately saving as a draft, if a schedule time is provided, use Google Cloud Tasks or an internal chron job system alongside the Gmail API to send the email automatically at the desired time.
 4. **Integration with Contacts:** Add a contact search via Google People API so the user can easily auto-complete recipient emails directly in the UI.
+
+## 6. Advanced Theming & Visual Customization
+**Description:** Expand the settings dashboard to offer granular control over visual aesthetics, including custom WebGL shaders, dynamic color palettes, and user-uploaded backgrounds.
+
+**Implementation Steps:**
+1. **Settings Extension:** Add a `themePreferences` object to the `AppSettings` interface.
+2. **Shader Gallery:** Build a selector component allowing users to choose from multiple WebGL shader variants (e.g., Aurora, Particles, Wave) for the login and dashboard backgrounds.
+3. **Dynamic CSS Variables:** Extend the `ThemeInjector` to support custom primary and accent colors driven by user selection.
+4. **Performance Tuning:** Introduce a "Performance Mode" toggle that disables all WebGL shaders and heavy animations for low-end devices or extended battery life.

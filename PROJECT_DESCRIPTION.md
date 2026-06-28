@@ -58,3 +58,4 @@ Instead of just giving you advice, the app can actually *create* the starting do
 - **Dedicated Calendar Dashboard**: A focused view to see the month at a glance, click on dates to add tasks, and view sidebars separating your upcoming Team Events from Self-Directed Personal tasks.
 - **Self-Directed Activity Dashboard**: A dedicated zone for executing personal tasks, interacting with the AI productivity coach, and utilizing the AI Email Drafter.
 - **Destructive Safety Guards**: Beautiful, soft custom modal Overlays guard destructive delete operations on synced Workspace elements to prevent accidental data loss.
+- **Customizable UI Settings**: Fine-tune the app's appearance, including a toggle for a beautiful WebGL aurora background shader on the login screen for performance or visual preference.
