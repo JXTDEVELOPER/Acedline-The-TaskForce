@@ -1,6 +1,6 @@
-import React from "react";
-import { Check, Trash2, CalendarDays, ExternalLink, RefreshCw, Video, ListTodo, Sparkles } from "lucide-react";
-import { Task, getDynamicPriority } from "../types";
+import React, { useState } from "react";
+import { Check, Trash2, CalendarDays, ExternalLink, RefreshCw, Video, ListTodo, Sparkles, ChevronDown, ChevronRight } from "lucide-react";
+import { Task } from "../types";
 
 interface TaskItemProps {
   task: Task;
@@ -21,6 +21,8 @@ export const TaskItem: React.FC<TaskItemProps> = ({
   onManageRegistration,
   isSyncing,
 }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
   // Helper to format due dates beautifully
   const formatDueDate = (dateStr: string) => {
     try {
@@ -72,6 +74,19 @@ export const TaskItem: React.FC<TaskItemProps> = ({
     onDelete(task);
   };
 
+  const hasDetails = Boolean(
+    task.description || 
+    task.dueDate || 
+    task.priority || 
+    task.googleEventId || 
+    task.meetLink || 
+    task.googleTaskId || 
+    task.assigneeEmail ||
+    (onCreateMeet && !task.completed) || 
+    (onCreateGoogleTask && !task.completed) ||
+    (onManageRegistration && !task.completed)
+  );
+
   return (
     <div
       id={`task-item-${task.id}`}
@@ -95,28 +110,41 @@ export const TaskItem: React.FC<TaskItemProps> = ({
 
       {/* Task description / text content */}
       <div className="flex-1 min-w-0">
-        <h3
-          className={`text-sm font-medium text-natural-text-dark transition-all duration-300 ${
-            task.completed ? "line-through text-natural-text-secondary/80" : ""
-          }`}
+        <div 
+          className={`flex items-start justify-between gap-2 select-none ${hasDetails ? 'cursor-pointer' : ''}`}
+          onClick={() => hasDetails && setIsExpanded(!isExpanded)}
         >
-          {task.title}
-        </h3>
-        {task.description ? (
-          <p
-            className={`mt-1 text-xs text-natural-text-primary break-words ${
-              task.completed ? "line-through text-natural-text-secondary/50" : ""
+          <h3
+            className={`text-sm font-medium text-natural-text-dark transition-all duration-300 ${
+              task.completed ? "line-through text-natural-text-secondary/80" : ""
             }`}
           >
-            {task.description}
-          </p>
-        ) : null}
+            {task.title}
+          </h3>
+          {hasDetails && (
+            <div className="text-gray-400 hover:text-gray-600 transition-colors mt-0.5 shrink-0">
+              {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+            </div>
+          )}
+        </div>
+        
+        {isExpanded && hasDetails && (
+          <div className="mt-2 animate-in fade-in slide-in-from-top-1 duration-200">
+            {task.description ? (
+              <p
+                className={`text-xs text-natural-text-primary break-words mb-2 ${
+                  task.completed ? "line-through text-natural-text-secondary/50" : ""
+                }`}
+              >
+                {task.description}
+              </p>
+            ) : null}
 
-        {/* Task badging (Due dates, priority, Meet links, Google Task links, Synced tag) */}
-        {(task.dueDate || task.priority || task.googleEventId || task.meetLink || task.googleTaskId || (onCreateMeet && !task.completed) || (onCreateGoogleTask && !task.completed)) ? (
-          <div className="mt-2 flex flex-wrap items-center gap-2">
+            {/* Task badging (Due dates, priority, Meet links, Google Task links, Synced tag) */}
+            {(task.dueDate || task.priority || task.googleEventId || task.meetLink || task.googleTaskId || (onCreateMeet && !task.completed) || (onCreateGoogleTask && !task.completed)) ? (
+              <div className="flex flex-wrap items-center gap-2">
             {(task.priority || task.dueDate) && (() => {
-              const dynPri = getDynamicPriority(task);
+              const dynPri = task.priority || "low";
               return (
                 <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide border ${
                   dynPri === "high" ? "bg-red-50 text-red-600 border-red-200" :
@@ -213,7 +241,9 @@ export const TaskItem: React.FC<TaskItemProps> = ({
               </button>
             ) : null}
           </div>
-        ) : null}
+            ) : null}
+          </div>
+        )}
       </div>
 
       {/* Right Column details (Delete action) */}

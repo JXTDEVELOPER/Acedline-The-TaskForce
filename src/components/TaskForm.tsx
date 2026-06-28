@@ -116,10 +116,19 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onAddTask, isSyncing, worksp
     if (!title.trim() || isAutofilling) return;
     setIsAutofilling(true);
     try {
+      let finalDueDate: string | undefined;
+      if (hasDueDate && dueDateStr) {
+        if (dueTimeStr) {
+          finalDueDate = `${dueDateStr}T${dueTimeStr}:00`;
+        } else {
+          finalDueDate = dueDateStr;
+        }
+      }
+
       const res = await fetch("/api/smart-task-autofill", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: title.trim() }),
+        body: JSON.stringify({ title: title.trim(), dueDate: finalDueDate }),
       });
       if (res.ok) {
         const data = await res.json();
@@ -211,7 +220,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onAddTask, isSyncing, worksp
         data.addMeet,
         data.addGoogleTask,
         data.registrationFields || [],
-        undefined,
+        data.priority,
         undefined,
         allowWorkspaceSelection ? selectedWorkspace : undefined
       );

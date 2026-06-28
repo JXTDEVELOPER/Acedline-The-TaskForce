@@ -140,6 +140,11 @@ Given a natural language scheduling prompt, analyze the instructions and extract
                 type: Type.BOOLEAN,
                 description: "Whether a synchronized todo item or Google Task is mentioned/needed.",
               },
+              priority: {
+                type: Type.STRING,
+                enum: ["high", "medium", "low"],
+                description: "Priority of the task evaluated based on the time left to complete it relative to today's date. If < 24 hours, 'high'. If 1-3 days, 'medium'. If > 3 days, 'low'. Default to 'low' if no date is specified.",
+              },
               registrationFields: {
                 type: Type.ARRAY,
                 items: {
@@ -484,20 +489,21 @@ Output ONLY a JSON object with:
 
 app.post("/api/smart-task-autofill", async (req, res) => {
   try {
-    const { title } = req.body;
+    const { title, dueDate } = req.body;
     if (!title) {
       return res.status(400).json({ error: "Task title is required" });
     }
 
     const ai = getAiClient();
-    const systemInstruction = `You are a helpful assistant. The user has provided a task title.
+    const todayDateStr = new Date().toISOString().split("T")[0];
+    const systemInstruction = `You are a helpful assistant. The user has provided a task title and an optional due date.
 You must output ONLY a JSON object with two fields:
 - "description": A concise, practical 2-3 sentence description of the sub-steps or context needed to complete this task.
-- "priority": One of "high", "medium", or "low" based on how typically urgent this kind of task is.
+- "priority": One of "high", "medium", or "low". Evaluate this according to the time left to complete the event relative to today's date (${todayDateStr}). If less than 24 hours left (or overdue), use "high". If 1-3 days left, use "medium". If more than 3 days left, use "low". If no due date is provided, infer the priority based on how typically urgent this kind of task is.
 
 Do not output any markdown formatting (like \`\`\`json), just the raw JSON object.`;
 
-    const prompt = `Task Title: ${title}`;
+    const prompt = `Task Title: ${title}\nDue Date: ${dueDate || "None"}`;
 
     const response = await callGeminiWithRetry(() =>
       ai.models.generateContent({

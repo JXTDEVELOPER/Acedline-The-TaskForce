@@ -19,7 +19,8 @@ A highly polished, modern single-page task management application built with **R
   - 🎓 **Google Classroom**: Provision new Classroom courses for larger projects.
   - 📋 **Google Forms**: Create customizable dynamic sign-up questionnaires and feedback forms.
 - **Google Calendar Sync**: Creating a task with a deadline automatically creates a corresponding Google Calendar event on your synced accounts.
-- **Dedicated Calendar View**: Easily view, manage, and add tasks directly from an integrated calendar dashboard view. Tasks are color-coded by their designated priority.
+- **Dedicated Calendar View**: Easily view, manage, and add tasks directly from an integrated calendar dashboard view. Includes a quick-access sidebar separating upcoming Team Events and Self-Directed Personal tasks.
+- **Quick Actions**: Mark tasks as done directly from the Calendar and Self-Directed Activity Dashboards with one-click actions.
 - **Google Classroom Integration**: Sync your active coursework seamlessly. The application imports active Google Classroom coursework and aligns it into your unified tasks list.
 - **Google Meet Generation**: Create official virtual Google Meet video conference links directly from the task interface with one click.
 - **Google Tasks Integration**: Synced tasks are bound directly to your Google Account’s default list, letting you toggle task completion statuses, modify descriptions, and delete events seamlessly between platforms.

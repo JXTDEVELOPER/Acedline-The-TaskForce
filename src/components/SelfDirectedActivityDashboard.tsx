@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { User } from "firebase/auth";
-import { Target, Send, Loader2, Calendar as CalendarIcon, FileText, Mail, Clock, Table, StickyNote, GraduationCap, ClipboardList, BrainCircuit, ListTodo, Plus } from "lucide-react";
+import { Target, Send, Loader2, Calendar as CalendarIcon, FileText, Mail, Clock, Table, StickyNote, GraduationCap, ClipboardList, BrainCircuit, ListTodo, Plus, Check } from "lucide-react";
 import Markdown from "react-markdown";
-import { Task, getDynamicPriority } from "../types";
+import { Task } from "../types";
 import { createGoogleDocWithInstructions, draftEmailWithInstructions, createGoogleSlidesPresentation, createGoogleSheetForTask, createGoogleKeepNote, createGoogleForm, createGoogleClassroom } from "../lib/workspace";
 import { TaskForm } from "./TaskForm";
 
@@ -27,6 +27,7 @@ interface DashboardProps {
   ) => Promise<void>;
   onFetchCalendarEvents: () => Promise<void>;
   onSyncGoogleTasks: () => Promise<void>;
+  onToggleComplete?: (task: Task) => Promise<void>;
 }
 
 export function SelfDirectedActivityDashboard({ 
@@ -36,7 +37,8 @@ export function SelfDirectedActivityDashboard({
   calendarEvents,
   onAddTask,
   onFetchCalendarEvents,
-  onSyncGoogleTasks
+  onSyncGoogleTasks,
+  onToggleComplete
 }: DashboardProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -156,12 +158,24 @@ export function SelfDirectedActivityDashboard({
   };
 
   const renderTaskCard = (task: Task, colorClass: string, badgeText: string) => (
-    <div key={task.id} className={`p-4 rounded-xl border bg-white ${colorClass} shadow-xs mb-3`}>
+    <div key={task.id} className={`p-4 rounded-xl border bg-white ${colorClass} shadow-xs mb-3 group`}>
       <div className="flex justify-between items-start mb-2">
         <h4 className="font-semibold text-sm text-gray-900 leading-tight">{task.title}</h4>
-        <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-white/50 backdrop-blur-sm border">
-          {badgeText}
-        </span>
+        <div className="flex items-center gap-2">
+          {onToggleComplete && (
+            <button
+              onClick={() => onToggleComplete(task)}
+              className="flex items-center gap-1 px-2.5 py-0.5 text-[10px] font-bold tracking-wider uppercase rounded-full bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition-colors"
+              title="Mark as Done"
+            >
+              <Check className="w-3 h-3" />
+              Done
+            </button>
+          )}
+          <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-white/50 backdrop-blur-sm border">
+            {badgeText}
+          </span>
+        </div>
       </div>
       {task.dueDate && (
         <p className="text-xs text-gray-600 flex items-center gap-1 mb-3">
@@ -278,7 +292,7 @@ export function SelfDirectedActivityDashboard({
                 <p className="text-xs text-neutral-500 p-4 text-center">No tasks available.</p>
               ) : (
                 incompleteTasks.map(task => {
-                  const priority = getDynamicPriority(task);
+                  const priority = task.priority || "low";
                   let colorClass = "";
                   let badgeText = "";
                   if (priority === "high") {

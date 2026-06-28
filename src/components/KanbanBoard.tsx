@@ -10,6 +10,7 @@ interface KanbanBoardProps {
   onCreateGoogleTask?: (task: Task) => Promise<void>;
   onManageRegistration?: (task: Task) => void;
   onUpdateStage: (taskId: string, stage: string) => Promise<void>;
+  onClearDone?: () => Promise<void>;
   isSyncing: boolean;
 }
 
@@ -28,6 +29,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   onCreateGoogleTask,
   onManageRegistration,
   onUpdateStage,
+  onClearDone,
   isSyncing,
 }) => {
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
@@ -53,7 +55,10 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   return (
     <div className="flex gap-4 overflow-x-auto pb-4 pt-2">
       {STAGES.map((stage) => {
-        const stageTasks = tasks.filter((t) => (t.stage || "todo") === stage.id);
+        const stageTasks = tasks.filter((t) => {
+          const effectiveStage = t.completed ? "done" : (t.stage === "done" && !t.completed ? "todo" : (t.stage || "todo"));
+          return effectiveStage === stage.id;
+        });
 
         return (
           <div
@@ -63,10 +68,22 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
             onDrop={(e) => handleDrop(e, stage.id)}
           >
             <div className="p-4 border-b border-natural-border flex items-center justify-between bg-white dark:bg-[#0b0b0c]">
-              <h3 className="font-semibold text-natural-text-dark text-sm">{stage.title}</h3>
-              <span className="bg-natural-accent-light text-natural-accent text-xs font-bold px-2 py-0.5 rounded-full">
-                {stageTasks.length}
-              </span>
+              <div className="flex items-center gap-2">
+                <h3 className="font-semibold text-natural-text-dark text-sm">{stage.title}</h3>
+                <span className="bg-natural-accent-light text-natural-accent text-xs font-bold px-2 py-0.5 rounded-full">
+                  {stageTasks.length}
+                </span>
+              </div>
+              {stage.id === "done" && stageTasks.length > 0 && onClearDone && (
+                <button
+                  type="button"
+                  onClick={onClearDone}
+                  disabled={isSyncing}
+                  className="text-[10px] font-bold text-natural-text-secondary hover:text-red-500 uppercase tracking-wide transition-colors"
+                >
+                  Clear All
+                </button>
+              )}
             </div>
             
             <div className="p-3 overflow-y-auto flex-1 flex flex-col gap-3 min-h-[150px]">

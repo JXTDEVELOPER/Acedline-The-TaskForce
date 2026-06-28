@@ -38,7 +38,8 @@ import { SelfDirectedActivityDashboard } from "./components/SelfDirectedActivity
 import { ClassroomDashboard } from "./components/ClassroomDashboard";
 import { CalendarDashboard } from "./components/CalendarDashboard";
 import { KanbanBoard } from "./components/KanbanBoard";
-import { LogOut, CalendarCheck2, LayoutList, RefreshCcw, AlertTriangle, Calendar, Sun, Moon, Menu, X, ChevronLeft, ChevronRight, Target, Columns, GraduationCap, CalendarDays, Plus } from "lucide-react";
+import { DebugDashboard } from "./components/DebugDashboard";
+import { LogOut, CalendarCheck2, LayoutList, RefreshCcw, AlertTriangle, Calendar, Sun, Moon, Menu, X, ChevronLeft, ChevronRight, Target, Columns, GraduationCap, CalendarDays, Plus, Bug } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 
 export default function App() {
@@ -53,7 +54,7 @@ export default function App() {
   const [registerTaskId, setRegisterTaskId] = useState<string | null>(null);
   const [taskToManageRegistration, setTaskToManageRegistration] = useState<Task | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [activeView, setActiveView] = useState<"event-management" | "self-directed" | "classroom" | "calendar">("event-management");
+  const [activeView, setActiveView] = useState<"event-management" | "self-directed" | "classroom" | "calendar" | "boards" | "debug">("event-management");
   const [viewMode, setViewMode] = useState<"list" | "kanban">("list");
 
   // Theme support
@@ -115,6 +116,14 @@ export default function App() {
     );
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (token) {
+      listCalendarEvents(token)
+        .then((gEvents) => setCalendarEvents(gEvents))
+        .catch((err) => console.error("Silently failed to fetch calendar events:", err));
+    }
+  }, [token]);
 
   // Listen to Firestore tasks (Client-side sorted to avoid composite index requirements)
   useEffect(() => {
@@ -246,6 +255,24 @@ export default function App() {
     if (!user) return;
     setIsSyncing(true);
     setSyncErrorMessage(null);
+
+    if (!priority) {
+      try {
+        const aiRes = await fetch("/api/smart-task-autofill", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title, dueDate }),
+        });
+        if (aiRes.ok) {
+          const aiData = await aiRes.json();
+          if (aiData.priority) {
+            priority = aiData.priority;
+          }
+        }
+      } catch (e) {
+        console.error("AI priority evaluation failed:", e);
+      }
+    }
 
     let googleEventId: string | null = null;
     let meetLink: string | null = null;
@@ -472,6 +499,7 @@ export default function App() {
       const taskDocRef = doc(db, "tasks", task.id);
       await updateDoc(taskDocRef, {
         completed: updatedCompletedState,
+        stage: updatedCompletedState ? "done" : (task.stage === "done" ? "todo" : task.stage || "todo"),
         updatedAt: serverTimestamp(),
       });
     } catch (error) {
@@ -491,6 +519,7 @@ export default function App() {
       const taskDocRef = doc(db, "tasks", taskId);
       await updateDoc(taskDocRef, {
         stage,
+        completed: stage === "done",
         updatedAt: serverTimestamp(),
       });
     } catch (error) {
@@ -540,6 +569,49 @@ export default function App() {
     } finally {
       setIsSyncing(false);
       setTaskToDelete(null);
+    }
+  };
+
+  // Action: Clear all done tasks
+  const handleClearDoneTasks = async () => {
+    if (!user) return;
+    setIsSyncing(true);
+    setSyncErrorMessage(null);
+
+    const doneTasks = tasks.filter((t) => {
+      const effectiveStage = t.completed ? "done" : (t.stage === "done" && !t.completed ? "todo" : (t.stage || "todo"));
+      return effectiveStage === "done";
+    });
+    
+    let hasError = false;
+    try {
+      for (const task of doneTasks) {
+        if (task.googleEventId && token) {
+          try {
+            await deleteCalendarEvent(task.googleEventId, token);
+          } catch (e) {
+            console.error("Google Calendar Event Delete failed:", e);
+            hasError = true;
+          }
+        }
+        if (task.googleTaskId && token) {
+          try {
+            await deleteGoogleTask(task.googleTaskId, token);
+          } catch (e) {
+            console.error("Google Tasks Delete failed:", e);
+            hasError = true;
+          }
+        }
+        const taskDocRef = doc(db, "tasks", task.id);
+        await deleteDoc(taskDocRef);
+      }
+      if (hasError) {
+        setSyncErrorMessage("Some external Google records could not be removed, but local records were cleared.");
+      }
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `tasks (batch clear)`);
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -838,6 +910,24 @@ export default function App() {
             <CalendarDays className="h-5 w-5 shrink-0" />
             {isSidebarOpen && <span className="whitespace-nowrap">Calendar</span>}
           </a>
+          <a
+            href="#"
+            onClick={(e) => { e.preventDefault(); setActiveView("boards"); }}
+            className={`flex items-center rounded-xl font-medium transition-colors ${activeView === "boards" ? "bg-natural-accent-light text-natural-accent" : "text-natural-text-secondary hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-natural-text-primary"} ${isSidebarOpen ? "gap-3 px-3 py-2 text-sm" : "justify-center p-2"}`}
+            title={!isSidebarOpen ? "Boards" : undefined}
+          >
+            <Columns className="h-5 w-5 shrink-0" />
+            {isSidebarOpen && <span className="whitespace-nowrap">Boards</span>}
+          </a>
+          <a
+            href="#"
+            onClick={(e) => { e.preventDefault(); setActiveView("debug"); }}
+            className={`flex items-center rounded-xl font-medium transition-colors ${activeView === "debug" ? "bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400" : "text-natural-text-secondary hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-natural-text-primary"} ${isSidebarOpen ? "gap-3 px-3 py-2 text-sm" : "justify-center p-2"}`}
+            title={!isSidebarOpen ? "Debug" : undefined}
+          >
+            <Bug className="h-5 w-5 shrink-0" />
+            {isSidebarOpen && <span className="whitespace-nowrap">Debug</span>}
+          </a>
         </nav>
 
         <div className={`mt-auto pt-6 border-t border-natural-border flex flex-col gap-4 ${!isSidebarOpen && "items-center"}`}>
@@ -1008,33 +1098,7 @@ export default function App() {
               </div>
             )}
 
-            {/* View Mode Toggle */}
-            <div className="flex justify-end mt-6 mb-2">
-              <div className="flex bg-neutral-100 dark:bg-neutral-800 p-1 rounded-lg">
-                <button
-                  onClick={() => setViewMode("list")}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
-                    viewMode === "list"
-                      ? "bg-white dark:bg-neutral-700 text-natural-text-dark shadow-sm"
-                      : "text-natural-text-secondary hover:text-natural-text-primary"
-                  }`}
-                >
-                  <LayoutList className="h-3.5 w-3.5" />
-                  List
-                </button>
-                <button
-                  onClick={() => setViewMode("kanban")}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
-                    viewMode === "kanban"
-                      ? "bg-white dark:bg-neutral-700 text-natural-text-dark shadow-sm"
-                      : "text-natural-text-secondary hover:text-natural-text-primary"
-                  }`}
-                >
-                  <Columns className="h-3.5 w-3.5" />
-                  Board
-                </button>
-              </div>
-            </div>
+
 
             {/* Tasks Container */}
             <div id="tasks-container" className="rounded-2xl p-0 mt-2">
@@ -1050,17 +1114,6 @@ export default function App() {
                     Sit back, or type a deadline above to sync it.
                   </p>
                 </div>
-              ) : viewMode === "kanban" ? (
-                <KanbanBoard
-                  tasks={sortedTasks}
-                  onToggleComplete={handleToggleComplete}
-                  onDelete={handleDeleteTask}
-                  onCreateMeet={handleCreateMeetSpace}
-                  onCreateGoogleTask={handleCreateGoogleTask}
-                  onManageRegistration={setTaskToManageRegistration}
-                  onUpdateStage={handleUpdateStage}
-                  isSyncing={isSyncing}
-                />
               ) : (
                 <div className="rounded-2xl bg-white dark:bg-[#0b0b0c] p-3 border border-natural-border shadow-xs">
                   {sortedTasks.map((task) => (
@@ -1080,6 +1133,32 @@ export default function App() {
             </div>
           </div>
         </div>
+        ) : activeView === "boards" ? (
+          <div className="flex-1 overflow-y-auto p-4 md:p-10 lg:p-12 bg-white dark:bg-[#0b0b0c]">
+            <div className="mx-auto max-w-full">
+              <header className="mb-8 flex items-center justify-between pb-6 border-b border-natural-border">
+                <div>
+                  <h1 className="text-2xl font-bold tracking-tight text-natural-text-primary">
+                    Project Board
+                  </h1>
+                  <p className="mt-1 text-sm font-medium text-natural-text-secondary">
+                    Manage task stages visually
+                  </p>
+                </div>
+              </header>
+              <KanbanBoard
+                tasks={tasks}
+                onToggleComplete={handleToggleComplete}
+                onDelete={handleDeleteTask}
+                onCreateMeet={handleCreateMeetSpace}
+                onCreateGoogleTask={handleCreateGoogleTask}
+                onManageRegistration={setTaskToManageRegistration}
+                onUpdateStage={handleUpdateStage}
+                onClearDone={handleClearDoneTasks}
+                isSyncing={isSyncing}
+              />
+            </div>
+          </div>
         ) : activeView === "classroom" ? (
           <ClassroomDashboard
             user={user}
@@ -1090,7 +1169,15 @@ export default function App() {
           <CalendarDashboard
             tasks={tasks}
             onAddTask={handleAddTask}
+            onToggleComplete={handleToggleComplete}
             isSyncing={isSyncing}
+          />
+        ) : activeView === "debug" ? (
+          <DebugDashboard 
+            user={user}
+            tasks={tasks}
+            token={token}
+            calendarEvents={calendarEvents}
           />
         ) : (
           <SelfDirectedActivityDashboard 
@@ -1101,6 +1188,7 @@ export default function App() {
             onAddTask={handleAddTask}
             onFetchCalendarEvents={handleFetchCalendarEvents}
             onSyncGoogleTasks={handleSyncGoogleTasks}
+            onToggleComplete={handleToggleComplete}
           />
         )}
       </main>
