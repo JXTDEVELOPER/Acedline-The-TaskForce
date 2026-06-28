@@ -39,10 +39,13 @@ import { ClassroomDashboard } from "./components/ClassroomDashboard";
 import { CalendarDashboard } from "./components/CalendarDashboard";
 import { KanbanBoard } from "./components/KanbanBoard";
 import { DebugDashboard } from "./components/DebugDashboard";
-import { LogOut, CalendarCheck2, LayoutList, RefreshCcw, AlertTriangle, Calendar, Sun, Moon, Menu, X, ChevronLeft, ChevronRight, Target, Columns, GraduationCap, CalendarDays, Plus, Bug } from "lucide-react";
+import { SettingsDashboard } from "./components/SettingsDashboard";
+import { useSettings } from "./hooks/useSettings";
+import { LogOut, CalendarCheck2, LayoutList, RefreshCcw, AlertTriangle, Calendar, Sun, Moon, Menu, X, ChevronLeft, ChevronRight, Target, Columns, GraduationCap, CalendarDays, Plus, Bug, Settings as SettingsIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 
 export default function App() {
+  const { settings } = useSettings();
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -54,7 +57,7 @@ export default function App() {
   const [registerTaskId, setRegisterTaskId] = useState<string | null>(null);
   const [taskToManageRegistration, setTaskToManageRegistration] = useState<Task | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [activeView, setActiveView] = useState<"event-management" | "self-directed" | "classroom" | "calendar" | "boards" | "debug">("event-management");
+  const [activeView, setActiveView] = useState<"event-management" | "self-directed" | "classroom" | "calendar" | "boards" | "debug" | "settings">("event-management");
   const [viewMode, setViewMode] = useState<"list" | "kanban">("list");
 
   // Theme support
@@ -250,7 +253,8 @@ export default function App() {
     addGoogleTask?: boolean,
     registrationFields?: any[],
     priority?: "high" | "medium" | "low",
-    assigneeEmail?: string
+    assigneeEmail?: string,
+    workspaceTypeOverride?: "personal" | "team"
   ) => {
     if (!user) return;
     setIsSyncing(true);
@@ -874,59 +878,41 @@ export default function App() {
         </div>
 
         <nav className="flex-1 space-y-2">
+          {settings.sidebarOrder.map((view) => {
+            if (settings.sidebarVisibility[view] === false) return null;
+            
+            let Icon, label;
+            switch(view) {
+              case "event-management": Icon = CalendarCheck2; label = "Event Management"; break;
+              case "self-directed": Icon = Target; label = "Self-Directed Activity"; break;
+              case "classroom": Icon = GraduationCap; label = "Classroom"; break;
+              case "calendar": Icon = CalendarDays; label = "Calendar"; break;
+              case "boards": Icon = Columns; label = "Boards"; break;
+              default: return null;
+            }
+
+            return (
+              <a
+                key={view}
+                href="#"
+                onClick={(e) => { e.preventDefault(); setActiveView(view); }}
+                className={`flex items-center rounded-xl font-medium transition-colors ${activeView === view ? "bg-natural-accent-light text-natural-accent" : "text-natural-text-secondary hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-natural-text-primary"} ${isSidebarOpen ? "gap-3 px-3 py-2 text-sm" : "justify-center p-2"}`}
+                title={!isSidebarOpen ? label : undefined}
+              >
+                <Icon className="h-5 w-5 shrink-0" />
+                {isSidebarOpen && <span className="whitespace-nowrap">{label}</span>}
+              </a>
+            );
+          })}
+          
           <a
             href="#"
-            onClick={(e) => { e.preventDefault(); setActiveView("event-management"); }}
-            className={`flex items-center rounded-xl font-medium transition-colors ${activeView === "event-management" ? "bg-natural-accent-light text-natural-accent" : "text-natural-text-secondary hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-natural-text-primary"} ${isSidebarOpen ? "gap-3 px-3 py-2 text-sm" : "justify-center p-2"}`}
-            title={!isSidebarOpen ? "Event Management" : undefined}
+            onClick={(e) => { e.preventDefault(); setActiveView("settings"); }}
+            className={`flex items-center rounded-xl font-medium transition-colors ${activeView === "settings" ? "bg-natural-accent-light text-natural-accent" : "text-natural-text-secondary hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-natural-text-primary"} ${isSidebarOpen ? "gap-3 px-3 py-2 text-sm" : "justify-center p-2"}`}
+            title={!isSidebarOpen ? "Settings" : undefined}
           >
-            <CalendarCheck2 className="h-5 w-5 shrink-0" />
-            {isSidebarOpen && <span className="whitespace-nowrap">Event Management</span>}
-          </a>
-          <a
-            href="#"
-            onClick={(e) => { e.preventDefault(); setActiveView("self-directed"); }}
-            className={`flex items-center rounded-xl font-medium transition-colors ${activeView === "self-directed" ? "bg-natural-accent-light text-natural-accent" : "text-natural-text-secondary hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-natural-text-primary"} ${isSidebarOpen ? "gap-3 px-3 py-2 text-sm" : "justify-center p-2"}`}
-            title={!isSidebarOpen ? "Self-Directed Activity" : undefined}
-          >
-            <Target className="h-5 w-5 shrink-0" />
-            {isSidebarOpen && <span className="whitespace-nowrap">Self-Directed Activity</span>}
-          </a>
-          <a
-            href="#"
-            onClick={(e) => { e.preventDefault(); setActiveView("classroom"); }}
-            className={`flex items-center rounded-xl font-medium transition-colors ${activeView === "classroom" ? "bg-natural-accent-light text-natural-accent" : "text-natural-text-secondary hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-natural-text-primary"} ${isSidebarOpen ? "gap-3 px-3 py-2 text-sm" : "justify-center p-2"}`}
-            title={!isSidebarOpen ? "Classroom" : undefined}
-          >
-            <GraduationCap className="h-5 w-5 shrink-0" />
-            {isSidebarOpen && <span className="whitespace-nowrap">Classroom</span>}
-          </a>
-          <a
-            href="#"
-            onClick={(e) => { e.preventDefault(); setActiveView("calendar"); }}
-            className={`flex items-center rounded-xl font-medium transition-colors ${activeView === "calendar" ? "bg-natural-accent-light text-natural-accent" : "text-natural-text-secondary hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-natural-text-primary"} ${isSidebarOpen ? "gap-3 px-3 py-2 text-sm" : "justify-center p-2"}`}
-            title={!isSidebarOpen ? "Calendar" : undefined}
-          >
-            <CalendarDays className="h-5 w-5 shrink-0" />
-            {isSidebarOpen && <span className="whitespace-nowrap">Calendar</span>}
-          </a>
-          <a
-            href="#"
-            onClick={(e) => { e.preventDefault(); setActiveView("boards"); }}
-            className={`flex items-center rounded-xl font-medium transition-colors ${activeView === "boards" ? "bg-natural-accent-light text-natural-accent" : "text-natural-text-secondary hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-natural-text-primary"} ${isSidebarOpen ? "gap-3 px-3 py-2 text-sm" : "justify-center p-2"}`}
-            title={!isSidebarOpen ? "Boards" : undefined}
-          >
-            <Columns className="h-5 w-5 shrink-0" />
-            {isSidebarOpen && <span className="whitespace-nowrap">Boards</span>}
-          </a>
-          <a
-            href="#"
-            onClick={(e) => { e.preventDefault(); setActiveView("debug"); }}
-            className={`flex items-center rounded-xl font-medium transition-colors ${activeView === "debug" ? "bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400" : "text-natural-text-secondary hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-natural-text-primary"} ${isSidebarOpen ? "gap-3 px-3 py-2 text-sm" : "justify-center p-2"}`}
-            title={!isSidebarOpen ? "Debug" : undefined}
-          >
-            <Bug className="h-5 w-5 shrink-0" />
-            {isSidebarOpen && <span className="whitespace-nowrap">Debug</span>}
+            <SettingsIcon className="h-5 w-5 shrink-0" />
+            {isSidebarOpen && <span className="whitespace-nowrap">Settings</span>}
           </a>
         </nav>
 
@@ -1172,6 +1158,8 @@ export default function App() {
             onToggleComplete={handleToggleComplete}
             isSyncing={isSyncing}
           />
+        ) : activeView === "settings" ? (
+          <SettingsDashboard onOpenDebug={() => setActiveView("debug")} />
         ) : activeView === "debug" ? (
           <DebugDashboard 
             user={user}
@@ -1189,6 +1177,7 @@ export default function App() {
             onFetchCalendarEvents={handleFetchCalendarEvents}
             onSyncGoogleTasks={handleSyncGoogleTasks}
             onToggleComplete={handleToggleComplete}
+            settings={settings}
           />
         )}
       </main>

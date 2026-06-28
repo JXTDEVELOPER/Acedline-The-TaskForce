@@ -14,7 +14,8 @@ interface CalendarDashboardProps {
     addGoogleTask?: boolean,
     registrationFields?: any[],
     priority?: "high" | "medium" | "low",
-    assigneeEmail?: string
+    assigneeEmail?: string,
+    workspaceTypeOverride?: "personal" | "team"
   ) => Promise<void>;
   onToggleComplete?: (task: Task) => Promise<void>;
   isSyncing: boolean;

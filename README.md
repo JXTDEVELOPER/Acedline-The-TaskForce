@@ -14,7 +14,7 @@ A highly polished, modern single-page task management application built with **R
   - 📝 **Google Docs**: Create formatted action plan documents.
   - 📊 **Google Slides**: Generate presentation outlines for task execution.
   - 📈 **Google Sheets**: Initialize new project tracking spreadsheets.
-  - 📧 **Gmail**: Draft email plans to share with teams.
+  - 📧 **Gmail**: Draft email plans to share with teams and automatically create email drafts with AI.
   - 💡 **Google Keep**: Create quick reference notes for task steps.
   - 🎓 **Google Classroom**: Provision new Classroom courses for larger projects.
   - 📋 **Google Forms**: Create customizable dynamic sign-up questionnaires and feedback forms.

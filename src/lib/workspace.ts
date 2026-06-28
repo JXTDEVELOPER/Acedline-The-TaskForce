@@ -107,17 +107,21 @@ export async function createGoogleSlidesPresentation(taskTitle: string, instruct
   return `https://docs.google.com/presentation/d/${presentationId}/edit`;
 }
 
-export async function draftEmailWithInstructions(taskTitle: string, instructions: string, token: string): Promise<void> {
+export async function draftEmailWithInstructions(taskTitle: string, instructions: string, token: string, recipient?: string): Promise<void> {
   const subject = `Action Plan for: ${taskTitle}`;
   const body = instructions;
   
   // Construct RFC 2822 message
-  const rawMessage = [
+  const rawMessageLines = [
     `Subject: ${subject}`,
     "Content-Type: text/plain; charset=utf-8",
-    "",
-    body
-  ].join("\n");
+  ];
+  
+  if (recipient) {
+    rawMessageLines.unshift(`To: ${recipient}`);
+  }
+  
+  const rawMessage = [...rawMessageLines, "", body].join("\n");
 
   const encodedMessage = btoa(unescape(encodeURIComponent(rawMessage)))
     .replace(/\+/g, '-')

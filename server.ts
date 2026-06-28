@@ -400,6 +400,37 @@ app.post("/api/productivity-coach", async (req, res) => {
   }
 });
 
+app.post("/api/generate-email", async (req, res) => {
+  try {
+    const { topic } = req.body;
+    if (!topic) {
+      return res.status(400).json({ error: "Topic is required" });
+    }
+
+    const response = await callGeminiWithRetry(() =>
+      getAiClient().models.generateContent({
+        model: "gemini-3.5-flash",
+        contents: [
+          {
+            role: "user",
+            parts: [{ text: `Draft a professional email about: ${topic}. Do not include a subject line or recipient placeholder, just provide the body text directly so it can be pasted into an email.` }]
+          }
+        ],
+        config: {
+          temperature: 0.7,
+        }
+      })
+    );
+
+    return res.json({ text: response.text });
+  } catch (error: any) {
+    console.error("Generate email error:", error);
+    return res.status(500).json({
+      error: getFriendlyErrorMessage(error),
+    });
+  }
+});
+
 app.post("/api/generate-action-plan", async (req, res) => {
   try {
     const { taskTitle, taskDescription } = req.body;

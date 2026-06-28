@@ -39,3 +39,12 @@ This document outlines four potential future improvements for the Google Workspa
 2. **PWA Manifest:** Create a `manifest.json` defining the app's icons, theme colors, and standalone display mode to allow mobile installation.
 3. **Service Worker:** Use Vite's `vite-plugin-pwa` to register a service worker that caches the React application shell, CSS, and critical Google Fonts.
 4. **Offline Sync Queue:** For Google Workspace API calls (Calendar, Meet, Docs), implement a local queue using IndexedDB. If the user creates a task while offline, Firestore will handle its own sync, but the Google API actions must be stored locally and executed sequentially by a background sync listener once the `window.ononline` event fires.
+
+## 5. Automated AI Email Scheduling & Context Gathering
+**Description:** Expand the AI Email Drafter to automatically read task context and schedule emails for sending at specific times.
+
+**Implementation Steps:**
+1. **Context Injection:** Update the `/api/generate-email` endpoint to receive a full task object. Provide the LLM with the task's title, description, due date, and priority to draft a highly contextualized email.
+2. **UI Updates:** Add a date/time picker in the "AI Email Drafter" panel for scheduling.
+3. **Gmail API Adjustments:** Instead of immediately saving as a draft, if a schedule time is provided, use Google Cloud Tasks or an internal chron job system alongside the Gmail API to send the email automatically at the desired time.
+4. **Integration with Contacts:** Add a contact search via Google People API so the user can easily auto-complete recipient emails directly in the UI.
