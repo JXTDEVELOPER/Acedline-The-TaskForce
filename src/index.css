@@ -7,6 +7,19 @@
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 
+  --color-natural-bg: #FDFCFB;
+  --color-natural-panel: #F7F5F2;
+  --color-natural-accent: #b400ff;
+  --color-natural-accent-hover: #9b00de;
+  --color-natural-accent-light: rgba(180, 0, 255, 0.15);
+  --color-natural-text-primary: #4A443F;
+  --color-natural-text-secondary: #A09489;
+  --color-natural-text-dark: #2C2825;
+  --color-natural-border: #E8E4E1;
+  --color-natural-gold: rgba(180, 0, 255, 0.4);
+}
+
+.dark {
   --color-natural-bg: transparent;
   --color-natural-panel: rgba(255, 255, 255, 0.05);
   --color-natural-accent: #b400ff;
@@ -20,32 +33,50 @@
 }
 
 /* Force global theme overrides for glassmorphism and neon violet */
-body {
+.dark body, body.dark {
   background-color: transparent !important;
   color: #ffffff !important;
 }
 
 /* Override all solid backgrounds to be glassy */
-.bg-white,
-.dark\:bg-white,
-.bg-neutral-50,
-.dark\:bg-neutral-50,
-.bg-neutral-100,
-.dark\:bg-neutral-100,
-.bg-neutral-900,
-.dark\:bg-neutral-900,
-.bg-neutral-950,
-.dark\:bg-neutral-950,
-.bg-gray-50,
-.dark\:bg-gray-50,
-.bg-\[\#F7F5F2\],
-.dark\:bg-\[\#F7F5F2\],
-.bg-\[\#FAF9F6\],
-.dark\:bg-\[\#FAF9F6\],
-.bg-\[\#0b0b0c\],
-.dark\:bg-\[\#0b0b0c\],
-.bg-\[\#111112\],
-.dark\:bg-\[\#111112\] {
+.dark .bg-white,
+.dark \.dark\:bg-white,
+.dark .bg-neutral-50,
+.dark \.dark\:bg-neutral-50,
+.dark .bg-neutral-100,
+.dark \.dark\:bg-neutral-100,
+.dark .bg-neutral-900,
+.dark \.dark\:bg-neutral-900,
+.dark .bg-neutral-950,
+.dark \.dark\:bg-neutral-950,
+.dark .bg-gray-50,
+.dark \.dark\:bg-gray-50,
+.dark .bg-\[\#F7F5F2\],
+.dark \.dark\:bg-\[\#F7F5F2\],
+.dark .bg-\[\#FAF9F6\],
+.dark \.dark\:bg-\[\#FAF9F6\],
+.dark .bg-\[\#0b0b0c\],
+.dark \.dark\:bg-\[\#0b0b0c\],
+.dark .bg-\[\#111112\],
+.dark \.dark\:bg-\[\#111112\],
+.dark .bg-\[\#151515\],
+.dark \.dark\:bg-\[\#151515\],
+.dark .bg-natural-bg\/50,
+.dark .bg-neutral-50\/50,
+.dark \.dark\:bg-neutral-900\/20,
+.dark \.dark\:bg-neutral-900\/10,
+.dark .bg-emerald-50\/50,
+.dark \.dark\:bg-emerald-900\/10,
+.dark .bg-natural-panel,
+.dark \.dark\:bg-\[\#1D1B1A\],
+.dark .hover\:bg-neutral-50\/50:hover,
+.dark \.dark\:hover\:bg-neutral-800\/30:hover,
+.dark .hover\:bg-neutral-100:hover,
+.dark \.dark\:hover\:bg-neutral-800:hover,
+.dark \.dark\:hover\:bg-neutral-700:hover,
+.dark .hover\:bg-neutral-200:hover,
+.dark .bg-neutral-50\/80,
+.dark .bg-neutral-50\/30 {
   background-color: rgba(255, 255, 255, 0.03) !important;
   backdrop-filter: blur(16px) !important;
   -webkit-backdrop-filter: blur(16px) !important;
@@ -54,111 +85,154 @@ body {
 }
 
 /* Ensure text contrasts well */
-.text-neutral-900,
-.text-neutral-800,
-.text-neutral-700,
-.text-gray-900,
-.text-natural-text-primary,
-.text-natural-text-dark {
+.dark .text-neutral-900,
+.dark .text-neutral-800,
+.dark .text-neutral-700,
+.dark .text-gray-900,
+.dark .text-natural-text-primary,
+.dark .text-natural-text-dark {
   color: #ffffff !important;
 }
 
-.text-neutral-600,
-.text-neutral-500,
-.text-gray-500,
-.text-gray-600,
-.text-natural-text-secondary {
+.dark .text-neutral-600,
+.dark .text-neutral-500,
+.dark .text-gray-500,
+.dark .text-gray-600,
+.dark .text-natural-text-secondary {
   color: rgba(255, 255, 255, 0.6) !important;
 }
 
 /* Borders */
-.border-natural-border,
-.border-neutral-100,
-.border-neutral-200,
-.border-gray-200,
-.border-neutral-300,
-.border-neutral-800,
-.border-neutral-900 {
+.dark .border-natural-border,
+.dark .border-neutral-100,
+.dark .border-neutral-200,
+.dark .border-gray-200,
+.dark .border-neutral-300,
+.dark .border-neutral-800,
+.dark .border-neutral-900 {
   border-color: rgba(255, 255, 255, 0.1) !important;
 }
 
 /* Map specific brand colors to Violet */
-.bg-blue-600,
-.bg-indigo-600 {
+.dark .bg-blue-600,
+.dark .bg-indigo-600 {
   background-color: #b400ff !important;
   box-shadow: 0 0 15px rgba(180, 0, 255, 0.4) !important;
   color: #ffffff !important;
   border-color: transparent !important;
 }
-.hover\:bg-blue-700:hover,
-.hover\:bg-indigo-700:hover {
+.dark .hover\:bg-blue-700:hover,
+.dark .hover\:bg-indigo-700:hover {
   background-color: #9b00de !important;
   box-shadow: 0 0 25px rgba(180, 0, 255, 0.6) !important;
 }
 
+/* Light blue/indigo tags */
+.dark .bg-blue-50,
+.dark \.dark\:bg-blue-900\/30,
+.dark .bg-indigo-50,
+.dark \.dark\:bg-indigo-900\/30 {
+  background-color: rgba(180, 0, 255, 0.15) !important;
+  border-color: rgba(180, 0, 255, 0.3) !important;
+}
+
+.dark .text-blue-600,
+.dark \.dark\:text-blue-400,
+.dark .text-indigo-600,
+.dark \.dark\:text-indigo-400 {
+  color: #d373ff !important;
+}
+
+.dark .hover\:bg-blue-100:hover,
+.dark .hover\:bg-indigo-100:hover {
+  background-color: rgba(180, 0, 255, 0.25) !important;
+}
+
 /* Neon Violet Glows */
-.shadow-xs,
-.shadow-sm,
-.shadow-md,
-.shadow-xl,
-.shadow-2xl {
+.dark .shadow-xs,
+.dark .shadow-sm,
+.dark .shadow-md,
+.dark .shadow-xl,
+.dark .shadow-2xl {
   box-shadow: 0 4px 24px rgba(180, 0, 255, 0.05) !important;
 }
 
-.bg-natural-accent {
+.dark .bg-natural-accent {
   background-color: var(--color-natural-accent) !important;
   box-shadow: 0 0 15px rgba(180, 0, 255, 0.4) !important;
   color: #ffffff !important;
   border-color: transparent !important;
 }
 
-.bg-natural-accent:hover {
+.dark .bg-natural-accent:hover {
   background-color: var(--color-natural-accent-hover) !important;
   box-shadow: 0 0 25px rgba(180, 0, 255, 0.6) !important;
 }
 
-.text-natural-accent {
+.dark .text-natural-accent {
   color: var(--color-natural-accent) !important;
   text-shadow: 0 0 8px rgba(180, 0, 255, 0.4) !important;
 }
 
-.border-natural-accent {
+.dark .border-natural-accent {
   border-color: var(--color-natural-accent) !important;
   box-shadow: 0 0 10px rgba(180, 0, 255, 0.2) inset !important;
 }
 
 /* Override inputs */
-input, textarea, select {
+.dark input, .dark textarea, .dark select {
   background-color: rgba(0, 0, 0, 0.2) !important;
   color: #ffffff !important;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 
-input:focus, textarea:focus, select:focus {
+.dark input:focus, .dark textarea:focus, .dark select:focus {
   border-color: var(--color-natural-accent) !important;
   box-shadow: 0 0 0 2px rgba(180, 0, 255, 0.3) !important;
   outline: none !important;
 }
 
-input::placeholder, textarea::placeholder {
+.dark input::placeholder, .dark textarea::placeholder {
   color: rgba(255, 255, 255, 0.3) !important;
 }
 
 /* Red alerts and banners glassy */
-.bg-red-50, .bg-red-100 {
+.dark .bg-red-50, .dark .bg-red-100, .dark \.dark\:bg-red-900\/30 {
   background-color: rgba(255, 0, 0, 0.1) !important;
   backdrop-filter: blur(8px) !important;
   border: 1px solid rgba(255, 0, 0, 0.2) !important;
   color: #ff8080 !important;
 }
 
-.text-red-600, .text-red-500 {
+.dark .text-red-600, .dark .text-red-500, .dark \.dark\:text-red-400 {
   color: #ff8080 !important;
 }
 
-.bg-red-600 {
+.dark .bg-red-600 {
   background-color: rgba(255, 0, 0, 0.8) !important;
   box-shadow: 0 0 15px rgba(255, 0, 0, 0.4) !important;
+}
+
+/* Emerald alerts and banners glassy */
+.dark .bg-emerald-50, .dark .bg-emerald-100, .dark \.dark\:bg-emerald-900\/30, .dark .bg-green-50, .dark .bg-green-100, .dark \.dark\:bg-green-900\/30 {
+  background-color: rgba(16, 185, 129, 0.1) !important;
+  backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(16, 185, 129, 0.2) !important;
+}
+
+.dark .text-emerald-600, .dark .text-emerald-500, .dark .text-emerald-700, .dark \.dark\:text-emerald-400, .dark .text-green-600, .dark .text-green-500, .dark .text-green-700, .dark \.dark\:text-green-400 {
+  color: #34d399 !important;
+}
+
+/* Amber/Yellow alerts and banners glassy */
+.dark .bg-amber-50, .dark .bg-amber-100, .dark \.dark\:bg-amber-900\/30, .dark .bg-yellow-50, .dark .bg-yellow-100, .dark \.dark\:bg-yellow-900\/30 {
+  background-color: rgba(245, 158, 11, 0.1) !important;
+  backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(245, 158, 11, 0.2) !important;
+}
+
+.dark .text-amber-600, .dark .text-amber-500, .dark .text-amber-700, .dark \.dark\:text-amber-400, .dark .text-yellow-600, .dark .text-yellow-500, .dark .text-yellow-700, .dark \.dark\:text-yellow-400 {
+  color: #fbbf24 !important;
 }
 
 /* Smooth transition when switching themes */
@@ -169,12 +243,12 @@ input::placeholder, textarea::placeholder {
 }
 
 /* Form selection option style */
-select option {
+.dark select option {
   background-color: #111112;
   color: #ffffff;
 }
 
 /* Ensure svg inherit correctly */
-.bg-natural-accent svg {
+.dark .bg-natural-accent svg {
   stroke: #ffffff !important;
 }

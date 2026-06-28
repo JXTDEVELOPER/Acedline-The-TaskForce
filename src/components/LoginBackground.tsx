@@ -1,10 +1,11 @@
 import React, { useEffect, useRef } from 'react';
 
-export const LoginBackground: React.FC = () => {
+export const LoginBackground: React.FC<{ enableShader?: boolean }> = ({ enableShader = true }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const orbsRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
+    if (!enableShader) return;
     // WebGL Liquid Aurora Shader
     const glCanvas = canvasRef.current;
     if (!glCanvas) return;
@@ -151,6 +152,7 @@ export const LoginBackground: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    if (!enableShader) return;
     // 2D Orbs System (Soft, large floating gradients)
     const canvas = orbsRef.current;
     if (!canvas) return;
@@ -249,10 +251,14 @@ export const LoginBackground: React.FC = () => {
   }, []);
 
   return (
-    <div className="fixed inset-0 z-0 pointer-events-none bg-[#02050f]">
-      <canvas ref={canvasRef} className="absolute inset-0 w-full h-full opacity-80" />
-      <canvas ref={orbsRef} className="absolute inset-0 w-full h-full mix-blend-screen" />
-      <div className="absolute inset-0 backdrop-blur-[30px]" />
+    <div className="fixed inset-0 z-0 pointer-events-none bg-natural-bg dark:bg-[#02050f]">
+      {enableShader && (
+        <>
+          <canvas ref={canvasRef} className="absolute inset-0 w-full h-full opacity-80" />
+          <canvas ref={orbsRef} className="absolute inset-0 w-full h-full mix-blend-screen" />
+          <div className="absolute inset-0 backdrop-blur-[30px]" />
+        </>
+      )}
     </div>
   );
 };

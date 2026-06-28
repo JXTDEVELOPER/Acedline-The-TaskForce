@@ -21,6 +21,7 @@ export interface AppSettings {
   enableAiForms: boolean;
   enableAiKeep: boolean;
   enableAiClassroom: boolean;
+  enableShader: boolean;
   sidebarOrder: DashboardView[];
   sidebarVisibility: Record<DashboardView, boolean>;
   theme?: ThemeSettings;
@@ -35,6 +36,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   enableAiForms: true,
   enableAiKeep: true,
   enableAiClassroom: true,
+  enableShader: true,
   sidebarOrder: ["event-management", "self-directed", "classroom", "calendar", "boards"],
   sidebarVisibility: {
     "event-management": true,

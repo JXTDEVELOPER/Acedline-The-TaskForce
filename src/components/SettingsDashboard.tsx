@@ -1,5 +1,5 @@
 import React from 'react';
-import { Settings as SettingsIcon, Bot, FileText, Presentation, Table, FormInput, Lightbulb, GraduationCap, Mail, Bug, ChevronRight, LayoutList, ArrowUp, ArrowDown, Eye, EyeOff, CalendarCheck2, Target, CalendarDays, Columns } from 'lucide-react';
+import { Settings as SettingsIcon, Bot, FileText, Presentation, Table, FormInput, Lightbulb, GraduationCap, Mail, Bug, ChevronRight, LayoutList, ArrowUp, ArrowDown, Eye, EyeOff, CalendarCheck2, Target, CalendarDays, Columns, Wand2 } from 'lucide-react';
 import { AppSettings, useSettings, DashboardView } from '../hooks/useSettings';
 
 interface SettingsDashboardProps {
@@ -189,6 +189,16 @@ export function SettingsDashboard({ onOpenDebug, settings, updateSettings }: Set
           <section className="mt-8 pt-6 border-t border-natural-border">
             <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-4 px-1">Theme & Appearance</h3>
             <p className="text-sm text-neutral-500 mb-4 px-1">Customize the look and feel of Taskspace.</p>
+            
+            <div className="mb-6 grid grid-cols-1 gap-3">
+              <SettingRow 
+                icon={Wand2} 
+                title="Login Background Shader" 
+                description="Enable the WebGL aurora background animation on the login screen."
+                settingKey="enableShader"
+              />
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-5 bg-white dark:bg-[#111112] border border-neutral-200 dark:border-neutral-800 rounded-xl">
               <div>
                 <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">Background Color</label>

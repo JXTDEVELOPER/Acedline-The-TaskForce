@@ -812,14 +812,14 @@ export default function App() {
   // Render Login state
   if (!user) {
     return (
-      <div className="flex min-h-screen flex-col justify-center bg-[#02050f] px-6 py-12 antialiased relative overflow-hidden">
+      <div className="flex min-h-screen flex-col justify-center bg-natural-bg dark:bg-[#02050f] px-6 py-12 antialiased relative overflow-hidden">
         <LoginBackground />
         
         <div className="absolute top-4 right-4 animate-fade-in z-10">
           <button
             onClick={toggleTheme}
             title={theme === "light" ? "Switch to Night Mode" : "Switch to Light Mode"}
-            className="rounded-full border border-white/10 bg-white/5 backdrop-blur-md p-2.5 text-white/70 shadow-[0_4_15px_rgba(0,0,0,0.1)] hover:bg-white/10 hover:text-white transition-all active:scale-95 cursor-pointer"
+            className="rounded-full border border-natural-border dark:border-white/10 bg-white/50 dark:bg-white/5 backdrop-blur-md p-2.5 text-natural-text-secondary dark:text-white/70 shadow-sm dark:shadow-[0_4_15px_rgba(0,0,0,0.1)] hover:bg-neutral-100 dark:hover:bg-white/10 hover:text-natural-text-primary dark:hover:text-white transition-all active:scale-95 cursor-pointer"
           >
             {theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
           </button>
@@ -880,11 +880,11 @@ export default function App() {
     .toUpperCase();
 
   return (
-    <div className="min-h-screen bg-[#02050f] text-natural-text-primary dark:text-white antialiased font-sans flex flex-col md:flex-row relative overflow-hidden">
+    <div className="min-h-screen bg-natural-bg dark:bg-[#02050f] text-natural-text-primary dark:text-white antialiased font-sans flex flex-col md:flex-row relative overflow-hidden">
       <ThemeInjector theme={settings.theme} />
-      <LoginBackground />
+      <LoginBackground enableShader={settings.enableShader} />
       {/* Sidebar */}
-      <aside className={`transition-all duration-300 ease-in-out border-white/10 bg-black/20 backdrop-blur-2xl flex flex-col shrink-0 z-10 ${isSidebarOpen ? "w-full md:w-64 p-6 md:border-r border-b md:border-b-0" : "w-0 md:w-20 p-0 md:p-4 md:border-r overflow-hidden"} md:h-screen md:sticky md:top-0 relative shadow-[4px_0_24px_rgba(0,0,0,0.5)]`}>
+      <aside className={`transition-all duration-300 ease-in-out border-natural-border dark:border-white/10 bg-white/50 dark:bg-black/20 backdrop-blur-2xl flex flex-col shrink-0 z-10 ${isSidebarOpen ? "w-full md:w-64 p-6 md:border-r border-b md:border-b-0" : "w-0 md:w-20 p-0 md:p-4 md:border-r overflow-hidden"} md:h-screen md:sticky md:top-0 relative shadow-[4px_0_24px_rgba(0,0,0,0.05)] dark:shadow-[4px_0_24px_rgba(0,0,0,0.5)]`}>
         <div 
           onClick={() => setIsSidebarOpen(!isSidebarOpen)}
           className={`flex items-center gap-2 mb-8 cursor-pointer hover:opacity-80 transition-opacity ${!isSidebarOpen && "justify-center mb-6"}`}
@@ -894,7 +894,7 @@ export default function App() {
             <LayoutList className="h-4 w-4" />
           </div>
           {isSidebarOpen && (
-            <span className="text-xl font-semibold tracking-tight text-white whitespace-nowrap drop-shadow-md">
+            <span className="text-xl font-semibold tracking-tight text-natural-text-primary dark:text-white whitespace-nowrap drop-shadow-md">
               Taskspace
             </span>
           )}
@@ -919,7 +919,7 @@ export default function App() {
                 key={view}
                 href="#"
                 onClick={(e) => { e.preventDefault(); setActiveView(view); }}
-                className={`flex items-center rounded-xl font-medium transition-all duration-300 ${activeView === view ? "bg-white/10 text-[#b400ff] shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] border border-white/5" : "text-white/60 hover:bg-white/5 hover:text-white border border-transparent"} ${isSidebarOpen ? "gap-3 px-3 py-2 text-sm" : "justify-center p-2"}`}
+                className={`flex items-center rounded-xl font-medium transition-all duration-300 ${activeView === view ? "bg-natural-accent/10 dark:bg-white/10 text-natural-accent dark:text-[#b400ff] shadow-sm dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] border border-natural-border dark:border-white/5" : "text-natural-text-secondary dark:text-white/60 hover:bg-neutral-100 dark:hover:bg-white/5 hover:text-natural-text-primary dark:hover:text-white border border-transparent"} ${isSidebarOpen ? "gap-3 px-3 py-2 text-sm" : "justify-center p-2"}`}
                 title={!isSidebarOpen ? label : undefined}
               >
                 <Icon className={`h-5 w-5 shrink-0 ${activeView === view ? "drop-shadow-[0_0_8px_rgba(0,255,255,0.5)]" : ""}`} />
@@ -931,7 +931,7 @@ export default function App() {
           <a
             href="#"
             onClick={(e) => { e.preventDefault(); setActiveView("settings"); }}
-            className={`flex items-center rounded-xl font-medium transition-all duration-300 ${activeView === "settings" ? "bg-white/10 text-[#b400ff] shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] border border-white/5" : "text-white/60 hover:bg-white/5 hover:text-white border border-transparent"} ${isSidebarOpen ? "gap-3 px-3 py-2 text-sm" : "justify-center p-2"}`}
+            className={`flex items-center rounded-xl font-medium transition-all duration-300 ${activeView === "settings" ? "bg-natural-accent/10 dark:bg-white/10 text-natural-accent dark:text-[#b400ff] shadow-sm dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] border border-natural-border dark:border-white/5" : "text-natural-text-secondary dark:text-white/60 hover:bg-neutral-100 dark:hover:bg-white/5 hover:text-natural-text-primary dark:hover:text-white border border-transparent"} ${isSidebarOpen ? "gap-3 px-3 py-2 text-sm" : "justify-center p-2"}`}
             title={!isSidebarOpen ? "Settings" : undefined}
           >
             <SettingsIcon className={`h-5 w-5 shrink-0 ${activeView === "settings" ? "drop-shadow-[0_0_8px_rgba(0,255,255,0.5)]" : ""}`} />
@@ -956,10 +956,10 @@ export default function App() {
             )}
             {isSidebarOpen && (
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white truncate drop-shadow-sm">
+                <p className="text-sm font-medium text-natural-text-primary dark:text-white truncate drop-shadow-sm">
                   {user.displayName || "User"}
                 </p>
-                <p className="text-xs text-white/60 truncate font-mono">
+                <p className="text-xs text-natural-text-secondary dark:text-white/60 truncate font-mono">
                   {user.email}
                 </p>
               </div>
@@ -970,7 +970,7 @@ export default function App() {
               id="theme-toggle"
               onClick={toggleTheme}
               title={theme === "light" ? "Switch to Night Mode" : "Switch to Light Mode"}
-              className={`flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 p-2 text-xs font-medium text-white/70 transition-all hover:bg-white/10 hover:text-white cursor-pointer ${isSidebarOpen ? "flex-1" : "w-10 h-10"}`}
+              className={`flex items-center justify-center gap-2 rounded-xl border border-natural-border dark:border-white/10 bg-white/50 dark:bg-white/5 p-2 text-xs font-medium text-natural-text-secondary dark:text-white/70 transition-all hover:bg-neutral-100 dark:hover:bg-white/10 hover:text-natural-text-primary dark:hover:text-white cursor-pointer ${isSidebarOpen ? "flex-1" : "w-10 h-10"}`}
             >
               {theme === "light" ? (
                 <>
