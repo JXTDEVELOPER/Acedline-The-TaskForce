@@ -40,11 +40,12 @@ import { CalendarDashboard } from "./components/CalendarDashboard";
 import { KanbanBoard } from "./components/KanbanBoard";
 import { DebugDashboard } from "./components/DebugDashboard";
 import { SettingsDashboard } from "./components/SettingsDashboard";
+import { DailyBriefDashboard } from "./components/DailyBriefDashboard";
 import { OverdueTasksBanner } from "./components/OverdueTasksBanner";
 import { ThemeInjector } from "./components/ThemeInjector";
 import { LoginBackground } from "./components/LoginBackground";
 import { useSettings } from "./hooks/useSettings";
-import { LogOut, CalendarCheck2, LayoutList, RefreshCcw, AlertTriangle, Calendar, Sun, Moon, Menu, X, ChevronLeft, ChevronRight, Target, Columns, GraduationCap, CalendarDays, Plus, Bug, Settings as SettingsIcon } from "lucide-react";
+import { LogOut, CalendarCheck2, LayoutList, RefreshCcw, AlertTriangle, Calendar, Sun, Moon, Menu, X, ChevronLeft, ChevronRight, Target, Columns, GraduationCap, CalendarDays, Plus, Bug, Settings as SettingsIcon, LayoutDashboard } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 
 export default function App() {
@@ -60,7 +61,7 @@ export default function App() {
   const [registerTaskId, setRegisterTaskId] = useState<string | null>(null);
   const [taskToManageRegistration, setTaskToManageRegistration] = useState<Task | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [activeView, setActiveView] = useState<"event-management" | "self-directed" | "classroom" | "calendar" | "boards" | "debug" | "settings">("event-management");
+  const [activeView, setActiveView] = useState<"daily-brief" | "event-management" | "self-directed" | "classroom" | "calendar" | "boards" | "debug" | "settings">("daily-brief");
   const [viewMode, setViewMode] = useState<"list" | "kanban">("list");
 
   // Theme support
@@ -906,6 +907,7 @@ export default function App() {
             
             let Icon, label;
             switch(view) {
+              case "daily-brief": Icon = LayoutDashboard; label = "Daily Brief"; break;
               case "event-management": Icon = CalendarCheck2; label = "Event Management"; break;
               case "self-directed": Icon = Target; label = "Self-Directed Activity"; break;
               case "classroom": Icon = GraduationCap; label = "Classroom"; break;
@@ -998,7 +1000,11 @@ export default function App() {
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden z-10 relative">
-        {activeView === "event-management" ? (
+        {activeView === "daily-brief" ? (
+          <div className="flex-1 overflow-y-auto">
+            <DailyBriefDashboard tasks={tasks} calendarEvents={calendarEvents} />
+          </div>
+        ) : activeView === "event-management" ? (
           <div className="flex-1 overflow-y-auto p-4 md:p-10 lg:p-12">
             <div className="mx-auto max-w-2xl">
               {/* Header Section */}
@@ -1146,7 +1152,7 @@ export default function App() {
           </div>
         </div>
         ) : activeView === "boards" ? (
-          <div className="flex-1 overflow-y-auto p-4 md:p-10 lg:p-12 bg-white dark:bg-[#0b0b0c]">
+          <div className="flex-1 overflow-y-auto p-4 md:p-10 lg:p-12">
             <div className="mx-auto max-w-full">
               <header className="mb-8 flex items-center justify-between pb-6 border-b border-natural-border">
                 <div>

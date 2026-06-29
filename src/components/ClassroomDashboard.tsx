@@ -81,7 +81,7 @@ export function ClassroomDashboard({ user, token, onSyncClassroomTasks }: Classr
             <p>Loading your courses...</p>
           </div>
         ) : courses.length === 0 ? (
-          <div className="bg-white dark:bg-[#0b0b0c] border border-natural-border rounded-2xl p-8 text-center">
+          <div className="bg-white/50 dark:bg-[#0b0b0c]/50 backdrop-blur-xl border border-natural-border rounded-2xl p-8 text-center">
             <GraduationCap className="h-12 w-12 text-natural-text-secondary mx-auto mb-4" />
             <h3 className="text-lg font-medium text-natural-text-dark">No Active Courses</h3>
             <p className="text-sm text-natural-text-secondary mt-1">You are not enrolled in any active Google Classroom courses.</p>
@@ -89,7 +89,7 @@ export function ClassroomDashboard({ user, token, onSyncClassroomTasks }: Classr
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {courses.map((course) => (
-              <div key={course.id} className="bg-white dark:bg-[#0b0b0c] border border-natural-border rounded-2xl overflow-hidden shadow-sm flex flex-col">
+              <div key={course.id} className="bg-white/50 dark:bg-[#0b0b0c]/50 backdrop-blur-xl border border-natural-border rounded-2xl overflow-hidden shadow-sm flex flex-col">
                 <div className="p-4 bg-emerald-50/50 dark:bg-emerald-900/10 border-b border-natural-border">
                   <h3 className="font-semibold text-natural-text-dark line-clamp-1">{course.name}</h3>
                   {course.section && <p className="text-xs text-natural-text-secondary mt-0.5">{course.section}</p>}

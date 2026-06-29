@@ -7,6 +7,9 @@ export interface Task {
   completed: boolean;
   priority?: "high" | "medium" | "low";
   stage?: string;
+  estimatedDuration?: number; // In minutes
+  completionPercentage?: number; // 0-100
+  dependencies?: string[]; // Array of task IDs
   googleEventId?: string | null;
   meetLink?: string | null;
   googleTaskId?: string | null;
