@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { User } from "firebase/auth";
 import { Target, Send, Loader2, Calendar as CalendarIcon, FileText, Mail, Clock, Table, StickyNote, GraduationCap, ClipboardList, BrainCircuit, ListTodo, Plus, Check } from "lucide-react";
 import Markdown from "react-markdown";
@@ -35,6 +35,8 @@ interface DashboardProps {
   onToggleComplete?: (task: Task) => Promise<void>;
   settings?: AppSettings;
   isSyncing?: boolean;
+  taskAnalyses?: Record<string, any>;
+  isAnalyzing?: boolean;
 }
 
 export function SelfDirectedActivityDashboard({ 
@@ -47,7 +49,9 @@ export function SelfDirectedActivityDashboard({
   onSyncGoogleTasks,
   onToggleComplete,
   settings,
-  isSyncing = false
+  isSyncing = false,
+  taskAnalyses = {},
+  isAnalyzing = false
 }: DashboardProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -55,6 +59,46 @@ export function SelfDirectedActivityDashboard({
   const [isDrafting, setIsDrafting] = useState<string | null>(null);
   const [deepThinking, setDeepThinking] = useState(false);
   const [isAddingTask, setIsAddingTask] = useState(false);
+  const [hasGeneratedProactive, setHasGeneratedProactive] = useState(false);
+
+  useEffect(() => {
+    const fetchProactiveMessage = async () => {
+      if (messages.length > 0 || hasGeneratedProactive || !tasks || tasks.length === 0) return;
+      
+      const uncompletedTasks = tasks.filter(t => !t.completed);
+      if (uncompletedTasks.length === 0) return;
+
+      setIsLoading(true);
+      try {
+        const response = await fetch("/api/productivity-coach", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            messages: [{ role: "user", content: "GENERATE_PROACTIVE_GREETING_WITH_WARNINGS_ONLY" }],
+            context: {
+              tasks: uncompletedTasks,
+              currentTime: new Date().toISOString()
+            }
+          }),
+        });
+        const data = await response.json();
+        if (data.reply) {
+          setMessages([{ role: "model", content: data.reply }]);
+          setHasGeneratedProactive(true);
+        }
+      } catch (error) {
+        console.error("Failed to generate proactive message:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    // Slight delay so we don't block immediate render
+    const timer = setTimeout(fetchProactiveMessage, 500);
+    return () => clearTimeout(timer);
+  }, [messages.length, hasGeneratedProactive, tasks]);
 
   const [emailTopic, setEmailTopic] = useState("");
   const [emailRecipient, setEmailRecipient] = useState("");
@@ -204,11 +248,30 @@ export function SelfDirectedActivityDashboard({
     }
   };
 
-  const renderTaskCard = (task: Task, colorClass: string, badgeText: string) => (
-    <div key={task.id} className={`p-4 rounded-xl border bg-white ${colorClass} shadow-xs mb-3 group`}>
+  const renderTaskCard = (task: Task, colorClass: string, badgeText: string) => {
+    const aiAnalysis = taskAnalyses[task.id];
+    let aiBadgeColor = "bg-neutral-100 text-neutral-700 border-neutral-200";
+    if (aiAnalysis?.riskCategory === "Critical") {
+      aiBadgeColor = "bg-red-100 text-red-800 border-red-300";
+    } else if (aiAnalysis?.riskCategory === "High Risk") {
+      aiBadgeColor = "bg-orange-100 text-orange-800 border-orange-300";
+    } else if (aiAnalysis?.riskCategory === "Moderate Risk") {
+      aiBadgeColor = "bg-yellow-100 text-yellow-800 border-yellow-300";
+    } else if (aiAnalysis?.riskCategory === "Safe") {
+      aiBadgeColor = "bg-green-100 text-green-800 border-green-300";
+    }
+
+    return (
+    <div key={task.id} className={`p-4 rounded-xl border bg-white ${colorClass} shadow-xs mb-3 group transition-all duration-300`}>
       <div className="flex justify-between items-start mb-2">
         <h4 className="font-semibold text-sm text-gray-900 leading-tight">{task.title}</h4>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap justify-end">
+          {aiAnalysis && (
+            <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full border flex items-center gap-1 ${aiBadgeColor}`} title={`Confidence: ${aiAnalysis.confidenceLevel}%`}>
+              <Target className="w-3 h-3" />
+              {aiAnalysis.riskCategory} ({aiAnalysis.riskScore}/100)
+            </span>
+          )}
           {onToggleComplete && (
             <button
               onClick={() => onToggleComplete(task)}
@@ -225,11 +288,24 @@ export function SelfDirectedActivityDashboard({
         </div>
       </div>
       {task.dueDate && (
-        <p className="text-xs text-gray-600 flex items-center gap-1 mb-3">
+        <p className="text-xs text-gray-600 flex items-center gap-1 mb-2">
           <Clock className="w-3 h-3" /> {new Date(task.dueDate).toLocaleString()}
         </p>
       )}
       
+      {aiAnalysis && (
+        <div className="mt-2 mb-3 bg-white/60 backdrop-blur-md rounded-lg p-3 text-xs border border-white/20 shadow-sm animate-fade-in">
+          <p className="text-neutral-700 font-medium mb-1 flex items-start gap-1.5">
+             <Sparkles className="w-3.5 h-3.5 text-natural-accent shrink-0 mt-0.5" />
+             {aiAnalysis.riskExplanation}
+          </p>
+          <div className="flex items-center gap-1.5 mt-2">
+            <span className="font-bold text-natural-accent text-[10px] uppercase tracking-wide bg-natural-accent/10 px-2 py-0.5 rounded-md">Recommendation</span>
+            <span className="text-neutral-600 font-medium">{aiAnalysis.riskRecommendation}</span>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-wrap gap-2 mt-2 pt-3 border-t border-black/5">
         {settings?.enableAiDocs !== false && (
           <button 
@@ -304,6 +380,7 @@ export function SelfDirectedActivityDashboard({
       </div>
     </div>
   );
+  };
 
   return (
     <div className="flex-1 overflow-y-auto p-4 md:p-8 lg:p-10 h-full flex flex-col bg-neutral-50 dark:bg-neutral-950">
@@ -315,6 +392,12 @@ export function SelfDirectedActivityDashboard({
             <h1 className="text-3xl font-bold tracking-tight text-neutral-900 dark:text-white flex items-center gap-3">
               <Target className="h-8 w-8 text-blue-600 dark:text-blue-400" />
               Self-Directed Activity
+              {isAnalyzing && (
+                <span className="flex items-center gap-1.5 ml-2 text-[10px] font-semibold px-2 py-1 bg-natural-accent/10 text-natural-accent rounded-full border border-natural-accent/20 animate-pulse">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  AI Analyzing Risks
+                </span>
+              )}
             </h1>
             <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
               Prioritize, plan, and execute. Prevent missed deadlines.
@@ -417,10 +500,19 @@ export function SelfDirectedActivityDashboard({
               <div className="flex-1 overflow-y-auto p-6 space-y-6">
                 {messages.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center text-center max-w-md mx-auto opacity-70">
-                    <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-100 mb-2">Need help planning?</h3>
-                    <p className="text-sm text-neutral-500">
-                      Ask me to help you prioritize your tasks or create a step-by-step execution plan.
-                    </p>
+                    {isLoading ? (
+                      <div className="flex flex-col items-center justify-center">
+                        <Loader2 className="w-8 h-8 animate-spin text-blue-500 mb-4" />
+                        <p className="text-sm text-neutral-500">Analyzing your tasks...</p>
+                      </div>
+                    ) : (
+                      <>
+                        <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-100 mb-2">Productivity Coach</h3>
+                        <p className="text-sm text-neutral-500">
+                          Ask me to help you prioritize your tasks or create a step-by-step execution plan.
+                        </p>
+                      </>
+                    )}
                   </div>
                 ) : (
                   messages.map((msg, idx) => (

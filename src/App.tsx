@@ -38,13 +38,15 @@ import { SelfDirectedActivityDashboard } from "./components/SelfDirectedActivity
 import { ClassroomDashboard } from "./components/ClassroomDashboard";
 import { CalendarDashboard } from "./components/CalendarDashboard";
 import { KanbanBoard } from "./components/KanbanBoard";
+import { DailyAIBrief } from "./components/DailyAIBrief";
+import { CalendarAnalyzerDashboard } from "./components/CalendarAnalyzerDashboard";
 import { DebugDashboard } from "./components/DebugDashboard";
 import { SettingsDashboard } from "./components/SettingsDashboard";
 import { OverdueTasksBanner } from "./components/OverdueTasksBanner";
 import { ThemeInjector } from "./components/ThemeInjector";
 import { LoginBackground } from "./components/LoginBackground";
 import { useSettings } from "./hooks/useSettings";
-import { LogOut, CalendarCheck2, LayoutList, RefreshCcw, AlertTriangle, Calendar, Sun, Moon, Menu, X, ChevronLeft, ChevronRight, Target, Columns, GraduationCap, CalendarDays, Plus, Bug, Settings as SettingsIcon } from "lucide-react";
+import { LogOut, CalendarCheck2, LayoutList, RefreshCcw, AlertTriangle, Calendar, Sun, Moon, Menu, X, ChevronLeft, ChevronRight, Target, Columns, GraduationCap, CalendarDays, Plus, Bug, Settings as SettingsIcon, Zap, Activity } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 
 export default function App() {
@@ -60,9 +62,10 @@ export default function App() {
   const [registerTaskId, setRegisterTaskId] = useState<string | null>(null);
   const [taskToManageRegistration, setTaskToManageRegistration] = useState<Task | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [activeView, setActiveView] = useState<"event-management" | "self-directed" | "classroom" | "calendar" | "boards" | "debug" | "settings">("event-management");
+  const [activeView, setActiveView] = useState<"daily-brief" | "calendar-analyzer" | "event-management" | "self-directed" | "classroom" | "calendar" | "boards" | "debug" | "settings">("daily-brief");
   const [viewMode, setViewMode] = useState<"list" | "kanban">("list");
 
+  // Removed the useEffect that forced view switch
   // Theme support
   const [theme, setTheme] = useState<"light" | "dark">(() => {
     const saved = localStorage.getItem("theme");
@@ -94,6 +97,8 @@ export default function App() {
   const [calendarError, setCalendarError] = useState<string | null>(null);
   const [importingEventIds, setImportingEventIds] = useState<string[]>([]);
   const [isAddingEvent, setIsAddingEvent] = useState(false);
+  const [taskAnalyses, setTaskAnalyses] = useState<Record<string, any>>({});
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   // Load Registration route parameter
   useEffect(() => {
@@ -229,6 +234,7 @@ export default function App() {
       if (result) {
         setUser(result.user);
         setToken(result.accessToken);
+        updateSettings({ hasPromptedProactiveAi: false });
       }
     } catch (err) {
       console.error("Sign in failed:", err);
@@ -240,12 +246,55 @@ export default function App() {
   const handleSignOut = async () => {
     try {
       await logout();
+      updateSettings({ hasPromptedProactiveAi: false });
       setUser(null);
       setToken(null);
     } catch (err) {
       console.error("Logout failed:", err);
     }
   };
+
+  useEffect(() => {
+    const runAnalysis = async () => {
+      if (!user || tasks.length === 0) return;
+      
+      const uncompletedTasks = tasks.filter(t => !t.completed);
+      if (uncompletedTasks.length === 0) {
+        setTaskAnalyses({});
+        return;
+      }
+      
+      setIsAnalyzing(true);
+      try {
+        const res = await fetch("/api/analyze-deadlines", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            tasks: uncompletedTasks,
+            workingHours: {
+              start: settings.workingHoursStart || "09:00",
+              end: settings.workingHoursEnd || "17:00",
+            },
+            currentTime: new Date().toISOString(),
+            calendarEvents: calendarEvents
+          })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.analyses) {
+            setTaskAnalyses(data.analyses);
+          }
+        }
+      } catch (e) {
+        console.error("Failed to analyze deadlines", e);
+      } finally {
+        setIsAnalyzing(false);
+      }
+    };
+    
+    const timeout = setTimeout(runAnalysis, 1500);
+    return () => clearTimeout(timeout);
+  }, [tasks, calendarEvents, settings.workingHoursStart, settings.workingHoursEnd]);
 
   // Action: Add Task
   const handleAddTask = async (
@@ -257,7 +306,9 @@ export default function App() {
     registrationFields?: any[],
     priority?: "high" | "medium" | "low",
     assigneeEmail?: string,
-    workspaceTypeOverride?: "personal" | "team"
+    workspaceTypeOverride?: "personal" | "team",
+    estimatedDuration?: number,
+    completionPercentage?: number
   ) => {
     if (!user) return;
     setIsSyncing(true);
@@ -338,6 +389,8 @@ export default function App() {
           workspaceType,
           assigneeEmail,
           sharedWith,
+          estimatedDuration,
+          completionPercentage,
           createdAt: new Date(),
           updatedAt: new Date(),
         };
@@ -365,6 +418,8 @@ export default function App() {
         googleEventId: googleEventId || null,
         meetLink: meetLink || null,
         googleTaskId: googleTaskId || null,
+        estimatedDuration: estimatedDuration || null,
+        completionPercentage: completionPercentage || 0,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
@@ -883,6 +938,45 @@ export default function App() {
     <div className="min-h-screen bg-natural-bg dark:bg-[#02050f] text-natural-text-primary dark:text-white antialiased font-sans flex flex-col md:flex-row relative overflow-hidden">
       <ThemeInjector theme={settings.theme} />
       <LoginBackground enableShader={settings.enableShader} />
+      
+      {/* Initial Setup Prompt for Proactive AI */}
+      {!settings.hasPromptedProactiveAi && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#111112] border border-natural-border dark:border-white/10 rounded-2xl shadow-xl max-w-md w-full p-8 animate-scale-up relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 to-indigo-500" />
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500/20 to-indigo-500/20 flex items-center justify-center mb-6">
+              <Zap className="w-8 h-8 text-purple-600 dark:text-purple-400" />
+            </div>
+            <h2 className="text-2xl font-bold text-natural-text-dark dark:text-white mb-3">Enable Proactive AI?</h2>
+            <p className="text-sm text-natural-text-secondary dark:text-white/70 mb-4 leading-relaxed">
+              Would you like our AI to continuously analyze your schedule, detect conflicts, and recommend optimizations to help you stay on track?
+              <br/><br/>
+              You can always toggle this feature later in Settings.
+            </p>
+            <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3.5 mb-6 text-xs text-amber-800 dark:text-amber-300 flex items-start gap-2.5">
+              <AlertTriangle className="w-4.5 h-4.5 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
+              <span>
+                <strong>API Usage Note:</strong> Enabling continuous AI analysis can rapidly burn through your API credits, especially if your keys are on the <strong>Free Tier</strong>.
+              </span>
+            </div>
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => updateSettings({ enableProactiveAi: true, hasPromptedProactiveAi: true })}
+                className="w-full py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-medium rounded-xl hover:shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+              >
+                <Zap className="w-4 h-4" /> Yes, enable Proactive AI
+              </button>
+              <button
+                onClick={() => updateSettings({ enableProactiveAi: false, hasPromptedProactiveAi: true })}
+                className="w-full py-3 bg-neutral-100 dark:bg-white/5 text-natural-text-dark dark:text-white font-medium rounded-xl hover:bg-neutral-200 dark:hover:bg-white/10 transition-all active:scale-[0.98]"
+              >
+                Not right now
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Sidebar */}
       <aside className={`transition-all duration-300 ease-in-out border-natural-border dark:border-white/10 bg-white/50 dark:bg-black/20 backdrop-blur-2xl flex flex-col shrink-0 z-10 ${isSidebarOpen ? "w-full md:w-64 p-6 md:border-r border-b md:border-b-0" : "w-0 md:w-20 p-0 md:p-4 md:border-r overflow-hidden"} md:h-screen md:sticky md:top-0 relative shadow-[4px_0_24px_rgba(0,0,0,0.05)] dark:shadow-[4px_0_24px_rgba(0,0,0,0.5)]`}>
         <div 
@@ -906,6 +1000,8 @@ export default function App() {
             
             let Icon, label;
             switch(view) {
+              case "daily-brief": Icon = Zap; label = "Daily AI Brief"; break;
+              case "calendar-analyzer": Icon = Activity; label = "Calendar Analyzer"; break;
               case "event-management": Icon = CalendarCheck2; label = "Event Management"; break;
               case "self-directed": Icon = Target; label = "Self-Directed Activity"; break;
               case "classroom": Icon = GraduationCap; label = "Classroom"; break;
@@ -998,7 +1094,11 @@ export default function App() {
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden z-10 relative">
-        {activeView === "event-management" ? (
+        {activeView === "daily-brief" ? (
+          <DailyAIBrief user={user} tasks={tasks} calendarEvents={calendarEvents} settings={settings} />
+        ) : activeView === "calendar-analyzer" ? (
+          <CalendarAnalyzerDashboard user={user} tasks={tasks} calendarEvents={calendarEvents} settings={settings} updateTasks={setTasks} />
+        ) : activeView === "event-management" ? (
           <div className="flex-1 overflow-y-auto p-4 md:p-10 lg:p-12">
             <div className="mx-auto max-w-2xl">
               {/* Header Section */}
@@ -1138,6 +1238,7 @@ export default function App() {
                       onCreateGoogleTask={handleCreateGoogleTask}
                       onManageRegistration={setTaskToManageRegistration}
                       isSyncing={isSyncing}
+                      taskAnalysis={taskAnalyses[task.id]}
                     />
                   ))}
                 </div>
@@ -1169,6 +1270,7 @@ export default function App() {
                 onUpdateStage={handleUpdateStage}
                 onClearDone={handleClearDoneTasks}
                 isSyncing={isSyncing}
+                taskAnalyses={taskAnalyses}
               />
             </div>
           </div>
@@ -1210,6 +1312,8 @@ export default function App() {
             onToggleComplete={handleToggleComplete}
             settings={settings}
             isSyncing={isSyncing}
+            taskAnalyses={taskAnalyses}
+            isAnalyzing={isAnalyzing}
           />
         )}
       </main>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Settings as SettingsIcon, Bot, FileText, Presentation, Table, FormInput, Lightbulb, GraduationCap, Mail, Bug, ChevronRight, LayoutList, ArrowUp, ArrowDown, Eye, EyeOff, CalendarCheck2, Target, CalendarDays, Columns, Wand2 } from 'lucide-react';
+import { Settings as SettingsIcon, Bot, FileText, Presentation, Table, FormInput, Lightbulb, GraduationCap, Mail, Bug, ChevronRight, LayoutList, ArrowUp, ArrowDown, Eye, EyeOff, CalendarCheck2, Target, CalendarDays, Columns, Wand2, Clock, Zap, Activity } from 'lucide-react';
 import { AppSettings, useSettings, DashboardView } from '../hooks/useSettings';
 
 interface SettingsDashboardProps {
@@ -65,6 +65,8 @@ export function SettingsDashboard({ onOpenDebug, settings, updateSettings }: Set
 
   const getDashboardIconAndLabel = (view: DashboardView) => {
     switch (view) {
+      case 'daily-brief': return { Icon: Zap, label: 'Daily AI Brief' };
+      case 'calendar-analyzer': return { Icon: Activity, label: 'Calendar Analyzer' };
       case 'event-management': return { Icon: CalendarCheck2, label: 'Event Management' };
       case 'self-directed': return { Icon: Target, label: 'Self-Directed Activity' };
       case 'classroom': return { Icon: GraduationCap, label: 'Classroom' };
@@ -142,6 +144,12 @@ export function SettingsDashboard({ onOpenDebug, settings, updateSettings }: Set
                 settingKey="enableAiCoach"
               />
               <SettingRow 
+                icon={Zap} 
+                title="Proactive AI" 
+                description="Enable AI to proactively analyze your schedule and suggest optimizations."
+                settingKey="enableProactiveAi"
+              />
+              <SettingRow 
                 icon={Mail} 
                 title="AI Email Drafter" 
                 description="Enable drafting emails directly to Gmail."
@@ -183,6 +191,35 @@ export function SettingsDashboard({ onOpenDebug, settings, updateSettings }: Set
                 description="Allow AI to generate courses in Google Classroom."
                 settingKey="enableAiClassroom"
               />
+            </div>
+          </section>
+
+          <section className="mt-8 pt-6 border-t border-natural-border">
+            <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-4 px-1 flex items-center gap-2">
+              <Clock className="w-5 h-5 text-blue-500" />
+              Working Hours
+            </h3>
+            <p className="text-sm text-neutral-500 mb-4 px-1">Define your active working hours. AI will use this to calculate deadline risks and task feasibility.</p>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 px-1">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Start Time</label>
+                <input 
+                  type="time" 
+                  value={settings.workingHoursStart || "09:00"}
+                  onChange={(e) => updateSettings({ workingHoursStart: e.target.value })}
+                  className="bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-neutral-900 dark:text-neutral-100"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">End Time</label>
+                <input 
+                  type="time" 
+                  value={settings.workingHoursEnd || "17:00"}
+                  onChange={(e) => updateSettings({ workingHoursEnd: e.target.value })}
+                  className="bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-neutral-900 dark:text-neutral-100"
+                />
+              </div>
             </div>
           </section>
 

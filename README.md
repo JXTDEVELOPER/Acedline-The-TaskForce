@@ -6,6 +6,8 @@ A highly polished, modern single-page task management application built with **R
 
 ## Key Features
 
+- **AI Calendar Analyzer**: A continuous scheduling engine that proactively detects conflicts, overload, and deadline risks, then automatically generates an optimized daily plan to maximize deep work and prevent burnout.
+- **Daily AI Brief (Proactive AI)**: A welcoming dashboard that greets you with a personalized summary of your day, predicting task failure risks and generating a recommended daily schedule based on your working hours, tasks, and calendar events.
 - **Secure Authentication**: Google Sign-In powered by **Firebase Authentication** with auto-requesting of Google API integration credentials.
 - **Real-Time Synergy**: Auto-saves lists, tasks, and state transitions directly to **Cloud Firestore**.
 - **Dynamic Task Prioritization**: Automatically calculates task priority (High, Medium, Low) based on the time remaining until the deadline.
