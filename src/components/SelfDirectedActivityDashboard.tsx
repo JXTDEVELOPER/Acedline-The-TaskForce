@@ -338,7 +338,7 @@ export function SelfDirectedActivityDashboard({
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 shrink-0">
           
           {/* Priorities Board */}
-          <div className="lg:col-span-3 bg-white/50 dark:bg-[#111112]/50 backdrop-blur-xl border border-neutral-200 dark:border-neutral-800 rounded-2xl p-5 flex flex-col max-h-[500px]">
+          <div className="lg:col-span-3 bg-white dark:bg-[#111112] border border-neutral-200 dark:border-neutral-800 rounded-2xl p-5 flex flex-col max-h-[500px]">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
                 <ListTodo className="w-4 h-4 text-blue-600" /> All Tasks
@@ -376,7 +376,7 @@ export function SelfDirectedActivityDashboard({
           </div>
 
           {/* Next 24 Hours Calendar */}
-          <div className="bg-white/50 dark:bg-[#111112]/50 backdrop-blur-xl border border-neutral-200 dark:border-neutral-800 rounded-2xl p-5 flex flex-col max-h-[500px]">
+          <div className="bg-white dark:bg-[#111112] border border-neutral-200 dark:border-neutral-800 rounded-2xl p-5 flex flex-col max-h-[500px]">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
                 <CalendarIcon className="w-4 h-4 text-blue-600" /> Next 24 Hours
@@ -406,7 +406,7 @@ export function SelfDirectedActivityDashboard({
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 min-h-[400px]">
           {/* AI Coach */}
           {settings?.enableAiCoach !== false && (
-            <div className="flex flex-col bg-white/50 dark:bg-[#0b0b0c]/50 backdrop-blur-xl border border-neutral-200 dark:border-neutral-800 rounded-2xl shadow-xs overflow-hidden">
+            <div className="flex flex-col bg-white dark:bg-[#0b0b0c] border border-neutral-200 dark:border-neutral-800 rounded-2xl shadow-xs overflow-hidden">
               {/* Chat Header */}
               <div className="px-6 py-4 border-b border-neutral-100 dark:border-neutral-900 flex items-center gap-2 bg-neutral-50/50 dark:bg-neutral-900/50">
                  <Target className="w-5 h-5 text-blue-600" />
@@ -444,7 +444,7 @@ export function SelfDirectedActivityDashboard({
               </div>
 
               {/* Input Area */}
-              <div className="p-4 border-t border-neutral-100 dark:border-neutral-900 bg-white/50 dark:bg-[#0b0b0c]/50 backdrop-blur-md">
+              <div className="p-4 border-t border-neutral-100 dark:border-neutral-900 bg-white dark:bg-[#0b0b0c]">
                 <form onSubmit={handleSubmit} className="relative max-w-4xl mx-auto flex flex-col gap-2">
                   <div className="flex items-center justify-end px-2">
                     <button
@@ -484,7 +484,7 @@ export function SelfDirectedActivityDashboard({
           
           {/* Email Drafter */}
           {settings?.enableAiEmailDrafter !== false && (
-            <div className="flex flex-col bg-white/50 dark:bg-[#0b0b0c]/50 backdrop-blur-xl border border-neutral-200 dark:border-neutral-800 rounded-2xl shadow-xs overflow-hidden">
+            <div className="flex flex-col bg-white dark:bg-[#0b0b0c] border border-neutral-200 dark:border-neutral-800 rounded-2xl shadow-xs overflow-hidden">
               <div className="px-6 py-4 border-b border-neutral-100 dark:border-neutral-900 flex items-center gap-2 bg-neutral-50/50 dark:bg-neutral-900/50">
                  <Mail className="w-5 h-5 text-indigo-600" />
                  <h3 className="font-bold text-neutral-800 dark:text-neutral-200 text-sm">AI Email Drafter</h3>
@@ -539,7 +539,7 @@ export function SelfDirectedActivityDashboard({
 
         {isAddingTask && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-            <div className="bg-white/50 dark:bg-[#0b0b0c]/50 backdrop-blur-2xl border border-natural-border rounded-2xl shadow-xl w-full max-w-3xl relative flex flex-col max-h-[90vh]">
+            <div className="bg-white dark:bg-[#0b0b0c] border border-natural-border rounded-2xl shadow-xl w-full max-w-3xl relative flex flex-col max-h-[90vh]">
               <div className="p-4 border-b border-natural-border flex items-center justify-between">
                 <h3 className="font-semibold text-sm">Add New Task</h3>
                 <button 

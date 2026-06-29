@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-export type DashboardView = "daily-brief" | "event-management" | "self-directed" | "classroom" | "calendar" | "boards";
+export type DashboardView = "welcome" | "event-management" | "self-directed" | "classroom" | "calendar" | "boards";
 
 export type FontStyle = 'Inter' | 'system-ui' | 'serif' | 'monospace';
 
@@ -10,14 +10,6 @@ export interface ThemeSettings {
   accentColor?: string;
   fontColor?: string;
   fontFamily?: FontStyle;
-}
-
-export interface SchedulingSettings {
-  workStartTime: string; // "09:00"
-  workEndTime: string; // "17:00"
-  workingDays: number[]; // 0 for Sunday, 1 for Monday, etc. Default [1,2,3,4,5]
-  focusDuration: number; // in minutes
-  breakDuration: number; // in minutes
 }
 
 export interface AppSettings {
@@ -33,7 +25,6 @@ export interface AppSettings {
   sidebarOrder: DashboardView[];
   sidebarVisibility: Record<DashboardView, boolean>;
   theme?: ThemeSettings;
-  scheduling?: SchedulingSettings;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -46,9 +37,9 @@ const DEFAULT_SETTINGS: AppSettings = {
   enableAiKeep: true,
   enableAiClassroom: true,
   enableShader: true,
-  sidebarOrder: ["daily-brief", "event-management", "self-directed", "classroom", "calendar", "boards"],
+  sidebarOrder: ["welcome", "event-management", "self-directed", "classroom", "calendar", "boards"],
   sidebarVisibility: {
-    "daily-brief": true,
+    "welcome": true,
     "event-management": true,
     "self-directed": true,
     "classroom": true,
@@ -61,13 +52,6 @@ const DEFAULT_SETTINGS: AppSettings = {
     accentColor: '',
     fontColor: '',
     fontFamily: 'Inter',
-  },
-  scheduling: {
-    workStartTime: "09:00",
-    workEndTime: "17:00",
-    workingDays: [1, 2, 3, 4, 5],
-    focusDuration: 90,
-    breakDuration: 15,
   }
 };
 

@@ -74,6 +74,66 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onAddTask, isSyncing, worksp
   const [isAutofilling, setIsAutofilling] = useState(false);
   const [isDictating, setIsDictating] = useState(false);
 
+  const [isRecordingMemo, setIsRecordingMemo] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const mediaRecorderRef = React.useRef<MediaRecorder | null>(null);
+  const audioChunksRef = React.useRef<Blob[]>([]);
+
+  const handleToggleVoiceMemo = async () => {
+    if (isRecordingMemo) {
+      // Stop recording
+      if (mediaRecorderRef.current) {
+        mediaRecorderRef.current.stop();
+      }
+      setIsRecordingMemo(false);
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        setIsTranscribing(true);
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        
+        try {
+          const res = await fetch("/api/transcribe-audio", {
+            method: "POST",
+            headers: { "Content-Type": "audio/webm" },
+            body: audioBlob,
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            if (data.text) {
+              setDescription((prev) => (prev ? prev + " " + data.text : data.text));
+            }
+          }
+        } catch (err) {
+          console.error("Transcription failed", err);
+        } finally {
+          setIsTranscribing(false);
+          stream.getTracks().forEach(track => track.stop());
+        }
+      };
+
+      mediaRecorder.start();
+      setIsRecordingMemo(true);
+    } catch (err) {
+      console.error("Microphone access denied", err);
+      alert("Microphone access is required for Voice Memo.");
+    }
+  };
+
   const handleDictate = () => {
     // @ts-ignore
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -366,15 +426,34 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onAddTask, isSyncing, worksp
             </div>
 
             {/* Optional Description */}
-            <div>
+            <div className="relative">
               <textarea
                 id="task-description-textarea"
                 placeholder="Detail notes (optional)..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={1}
-                className="w-full resize-none border-0 bg-transparent text-sm text-natural-text-primary placeholder-natural-text-secondary/40 focus:outline-hidden focus:ring-0"
+                className="w-full resize-none border-0 bg-transparent text-sm text-natural-text-primary placeholder-natural-text-secondary/40 focus:outline-hidden focus:ring-0 pr-10"
               />
+              <button
+                type="button"
+                onClick={handleToggleVoiceMemo}
+                disabled={isTranscribing}
+                title="Record Voice Memo for Description"
+                className={`absolute right-0 top-0 p-1.5 rounded-full transition-colors ${
+                  isRecordingMemo 
+                    ? 'text-red-500 bg-red-50 animate-pulse' 
+                    : isTranscribing
+                    ? 'text-natural-accent bg-natural-accent/10 cursor-not-allowed'
+                    : 'text-natural-text-secondary hover:bg-natural-accent/10 hover:text-natural-accent'
+                }`}
+              >
+                {isTranscribing ? (
+                  <Sparkles className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Mic className="w-4 h-4" />
+                )}
+              </button>
             </div>
 
             {/* Due Date Details */}

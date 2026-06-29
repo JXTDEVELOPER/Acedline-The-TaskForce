@@ -77,7 +77,7 @@ export function CalendarDashboard({ tasks, onAddTask, onToggleComplete, isSyncin
               </p>
             </div>
             
-            <div className="flex items-center gap-4 bg-white/50 dark:bg-[#0b0b0c]/50 backdrop-blur-xl border border-natural-border p-1 rounded-xl shadow-xs">
+            <div className="flex items-center gap-4 bg-white dark:bg-[#0b0b0c] border border-natural-border p-1 rounded-xl shadow-xs">
               <button onClick={handlePrevMonth} className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg text-natural-text-secondary">
                 <ChevronLeft className="h-4 w-4" />
               </button>
@@ -90,7 +90,7 @@ export function CalendarDashboard({ tasks, onAddTask, onToggleComplete, isSyncin
             </div>
           </header>
 
-          <div className="flex-1 bg-white/50 dark:bg-[#0b0b0c]/50 backdrop-blur-xl border border-natural-border rounded-2xl shadow-sm overflow-hidden flex flex-col">
+          <div className="flex-1 bg-white dark:bg-[#0b0b0c] border border-natural-border rounded-2xl shadow-sm overflow-hidden flex flex-col">
             <div className="grid grid-cols-7 border-b border-natural-border bg-neutral-50/50 dark:bg-neutral-900/20">
 
             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
@@ -149,7 +149,7 @@ export function CalendarDashboard({ tasks, onAddTask, onToggleComplete, isSyncin
 
         {selectedDate && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-            <div className="bg-white/50 dark:bg-[#0b0b0c]/50 backdrop-blur-2xl border border-natural-border rounded-2xl shadow-xl w-full max-w-3xl relative flex flex-col max-h-[90vh]">
+            <div className="bg-white dark:bg-[#0b0b0c] border border-natural-border rounded-2xl shadow-xl w-full max-w-3xl relative flex flex-col max-h-[90vh]">
               <div className="p-4 border-b border-natural-border flex items-center justify-between">
                 <h3 className="font-semibold text-sm">Add Task for {format(parseISO(selectedDate), "MMMM d, yyyy")}</h3>
                 <button 
@@ -177,7 +177,7 @@ export function CalendarDashboard({ tasks, onAddTask, onToggleComplete, isSyncin
 
         {selectedTask && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-            <div className="bg-white/50 dark:bg-[#0b0b0c]/50 backdrop-blur-2xl border border-natural-border rounded-2xl shadow-xl w-full max-w-md relative flex flex-col max-h-[90vh]">
+            <div className="bg-white dark:bg-[#0b0b0c] border border-natural-border rounded-2xl shadow-xl w-full max-w-md relative flex flex-col max-h-[90vh]">
               <div className="p-4 border-b border-natural-border flex items-center justify-between">
                 <h3 className="font-semibold text-lg text-natural-text-dark">{selectedTask.title}</h3>
                 <button 
@@ -296,7 +296,7 @@ export function CalendarDashboard({ tasks, onAddTask, onToggleComplete, isSyncin
 
         {/* Sidebar Section */}
         <div className="w-full xl:w-[320px] shrink-0 flex flex-col gap-6">
-          <div className="bg-white/50 dark:bg-[#0b0b0c]/50 backdrop-blur-xl border border-natural-border rounded-2xl shadow-sm flex flex-col max-h-[500px]">
+          <div className="bg-white dark:bg-[#0b0b0c] border border-natural-border rounded-2xl shadow-sm flex flex-col max-h-[500px]">
             <div className="p-4 border-b border-natural-border flex items-center gap-2">
               <CalendarIcon className="w-4 h-4 text-indigo-600" />
               <h3 className="font-bold text-natural-text-dark">Upcoming Events (Team)</h3>
@@ -323,7 +323,7 @@ export function CalendarDashboard({ tasks, onAddTask, onToggleComplete, isSyncin
             </div>
           </div>
 
-          <div className="bg-white/50 dark:bg-[#0b0b0c]/50 backdrop-blur-xl border border-natural-border rounded-2xl shadow-sm flex flex-col max-h-[500px]">
+          <div className="bg-white dark:bg-[#0b0b0c] border border-natural-border rounded-2xl shadow-sm flex flex-col max-h-[500px]">
             <div className="p-4 border-b border-natural-border flex items-center gap-2">
               <Check className="w-4 h-4 text-emerald-600" />
               <h3 className="font-bold text-natural-text-dark">Self-Directed (Personal)</h3>

@@ -38,15 +38,16 @@ import { SelfDirectedActivityDashboard } from "./components/SelfDirectedActivity
 import { ClassroomDashboard } from "./components/ClassroomDashboard";
 import { CalendarDashboard } from "./components/CalendarDashboard";
 import { KanbanBoard } from "./components/KanbanBoard";
+import { WelcomeDashboard } from "./components/WelcomeDashboard";
 import { DebugDashboard } from "./components/DebugDashboard";
 import { SettingsDashboard } from "./components/SettingsDashboard";
-import { DailyBriefDashboard } from "./components/DailyBriefDashboard";
 import { OverdueTasksBanner } from "./components/OverdueTasksBanner";
 import { ThemeInjector } from "./components/ThemeInjector";
 import { LoginBackground } from "./components/LoginBackground";
 import { useSettings } from "./hooks/useSettings";
-import { LogOut, CalendarCheck2, LayoutList, RefreshCcw, AlertTriangle, Calendar, Sun, Moon, Menu, X, ChevronLeft, ChevronRight, Target, Columns, GraduationCap, CalendarDays, Plus, Bug, Settings as SettingsIcon, LayoutDashboard } from "lucide-react";
+import { LogOut, CalendarCheck2, LayoutList, RefreshCcw, AlertTriangle, Calendar, Sun, Moon, Menu, X, ChevronLeft, ChevronRight, Target, Columns, GraduationCap, CalendarDays, Plus, Bug, Settings as SettingsIcon, Home } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
+import confetti from "canvas-confetti";
 
 export default function App() {
   const { settings, updateSettings } = useSettings();
@@ -61,7 +62,7 @@ export default function App() {
   const [registerTaskId, setRegisterTaskId] = useState<string | null>(null);
   const [taskToManageRegistration, setTaskToManageRegistration] = useState<Task | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [activeView, setActiveView] = useState<"daily-brief" | "event-management" | "self-directed" | "classroom" | "calendar" | "boards" | "debug" | "settings">("daily-brief");
+  const [activeView, setActiveView] = useState<"welcome" | "event-management" | "self-directed" | "classroom" | "calendar" | "boards" | "debug" | "settings">("welcome");
   const [viewMode, setViewMode] = useState<"list" | "kanban">("list");
 
   // Theme support
@@ -474,6 +475,15 @@ export default function App() {
     setSyncErrorMessage(null);
 
     const updatedCompletedState = !task.completed;
+
+    if (updatedCompletedState) {
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#10b981', '#3b82f6', '#b400ff']
+      });
+    }
 
     // Optional Google Calendar Update
     try {
@@ -907,7 +917,7 @@ export default function App() {
             
             let Icon, label;
             switch(view) {
-              case "daily-brief": Icon = LayoutDashboard; label = "Daily Brief"; break;
+              case "welcome": Icon = Home; label = "Welcome"; break;
               case "event-management": Icon = CalendarCheck2; label = "Event Management"; break;
               case "self-directed": Icon = Target; label = "Self-Directed Activity"; break;
               case "classroom": Icon = GraduationCap; label = "Classroom"; break;
@@ -1000,10 +1010,13 @@ export default function App() {
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden z-10 relative">
-        {activeView === "daily-brief" ? (
-          <div className="flex-1 overflow-y-auto">
-            <DailyBriefDashboard user={user} tasks={tasks} calendarEvents={calendarEvents} />
-          </div>
+        {activeView === "welcome" ? (
+          <WelcomeDashboard 
+            user={user} 
+            tasks={tasks} 
+            setActiveView={setActiveView} 
+            todayFormatted={todayFormatted} 
+          />
         ) : activeView === "event-management" ? (
           <div className="flex-1 overflow-y-auto p-4 md:p-10 lg:p-12">
             <div className="mx-auto max-w-2xl">
@@ -1152,7 +1165,7 @@ export default function App() {
           </div>
         </div>
         ) : activeView === "boards" ? (
-          <div className="flex-1 overflow-y-auto p-4 md:p-10 lg:p-12">
+          <div className="flex-1 overflow-y-auto p-4 md:p-10 lg:p-12 bg-white dark:bg-[#0b0b0c]">
             <div className="mx-auto max-w-full">
               <header className="mb-8 flex items-center justify-between pb-6 border-b border-natural-border">
                 <div>
