@@ -1002,7 +1002,7 @@ export default function App() {
       <main className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden z-10 relative">
         {activeView === "daily-brief" ? (
           <div className="flex-1 overflow-y-auto">
-            <DailyBriefDashboard tasks={tasks} calendarEvents={calendarEvents} />
+            <DailyBriefDashboard user={user} tasks={tasks} calendarEvents={calendarEvents} />
           </div>
         ) : activeView === "event-management" ? (
           <div className="flex-1 overflow-y-auto p-4 md:p-10 lg:p-12">

@@ -8,12 +8,15 @@ import {
   Activity, Target, Zap, LayoutDashboard 
 } from 'lucide-react';
 
+import { User } from 'firebase/auth';
+
 interface DailyBriefDashboardProps {
+  user: User | null;
   tasks: Task[];
   calendarEvents?: any[]; // raw google calendar events
 }
 
-export function DailyBriefDashboard({ tasks, calendarEvents = [] }: DailyBriefDashboardProps) {
+export function DailyBriefDashboard({ user, tasks, calendarEvents = [] }: DailyBriefDashboardProps) {
   const [now, setNow] = useState(new Date());
   
   useEffect(() => {
@@ -32,6 +35,15 @@ export function DailyBriefDashboard({ tasks, calendarEvents = [] }: DailyBriefDa
     }));
   }, [calendarEvents, now]);
 
+  const [geminiBrief, setGeminiBrief] = useState<{
+    brief: string;
+    coaching: string;
+    motivation: string;
+    explanation: string;
+  } | null>(null);
+  const [briefLoading, setBriefLoading] = useState(false);
+  const [briefError, setBriefError] = useState<string | null>(null);
+
   const {
     loading,
     risk,
@@ -41,8 +53,47 @@ export function DailyBriefDashboard({ tasks, calendarEvents = [] }: DailyBriefDa
     optimizedSchedule,
     conflicts,
     dashboardMetrics,
-    issues = []
+    issues = [],
+    analysis
   } = useAnalysisEngine(tasks, parsedEvents, now);
+
+  useEffect(() => {
+    if (!analysis || loading) return;
+    let isMounted = true;
+
+    const fetchBrief = async () => {
+      setBriefLoading(true);
+      setBriefError(null);
+      try {
+        const response = await fetch('/api/generate-daily-brief', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ analysis })
+        });
+        
+        if (!response.ok) {
+          const err = await response.json();
+          throw new Error(err.error || 'Failed to generate brief');
+        }
+
+        const data = await response.json();
+        if (isMounted) {
+          setGeminiBrief(data);
+        }
+      } catch (e: any) {
+        if (isMounted) {
+          setBriefError(e.message);
+        }
+      } finally {
+        if (isMounted) {
+          setBriefLoading(false);
+        }
+      }
+    };
+
+    fetchBrief();
+    return () => { isMounted = false; };
+  }, [analysis, loading]);
 
   if (loading || !dashboardMetrics) {
     return (
@@ -54,30 +105,9 @@ export function DailyBriefDashboard({ tasks, calendarEvents = [] }: DailyBriefDa
 
   const getGreeting = () => {
     const hour = now.getHours();
-    if (hour < 12) return "Good morning";
-    if (hour < 17) return "Good afternoon";
-    return "Good evening";
-  };
-
-  const getBriefSummary = () => {
-    const pendingTasks = tasks.filter(t => !t.completed).length;
-    let text = `${getGreeting()}. You have ${pendingTasks} active tasks. `;
-    if (dashboardMetrics.overdueCount > 0) {
-      text += `You have ${dashboardMetrics.overdueCount} overdue tasks that need attention. `;
-    }
-    if (dashboardMetrics.meetingHours > 4) {
-      text += `Your calendar is heavily booked with meetings. `;
-    } else {
-      text += `Your calendar looks manageable. `;
-    }
-    text += `You currently have ${dashboardMetrics.freeHours} hours of available focus time. `;
-    text += `Your productivity score is ${dashboardMetrics.productivityScore}%. `;
-    
-    if (recommendations.length > 0) {
-      text += recommendations[0].reason;
-    }
-    
-    return text;
+    const name = user?.displayName ? user.displayName.split(' ')[0] : '';
+    const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+    return name ? `Hello ${name}, ${greeting.toLowerCase()}` : greeting;
   };
 
   const topPriorities = tasks
@@ -104,9 +134,57 @@ export function DailyBriefDashboard({ tasks, calendarEvents = [] }: DailyBriefDa
         </p>
         
         <div className="mt-8 bg-natural-accent/5 dark:bg-[#b400ff]/10 rounded-2xl p-6 border border-natural-accent/10 dark:border-[#b400ff]/20">
-          <p className="text-lg text-natural-accent-dark dark:text-[#d373ff] leading-relaxed font-medium">
-            {getBriefSummary()}
-          </p>
+          {briefLoading ? (
+            <div className="flex flex-col gap-3 animate-pulse">
+              <div className="h-4 bg-natural-accent/20 dark:bg-[#b400ff]/30 rounded w-3/4"></div>
+              <div className="h-4 bg-natural-accent/20 dark:bg-[#b400ff]/30 rounded w-full"></div>
+              <div className="h-4 bg-natural-accent/20 dark:bg-[#b400ff]/30 rounded w-5/6"></div>
+              <p className="text-sm text-natural-accent/60 dark:text-[#d373ff]/60 mt-2 font-medium">Generating AI brief...</p>
+            </div>
+          ) : briefError ? (
+            <div className="text-red-500 font-medium">
+              <AlertCircle className="w-5 h-5 inline mr-2" />
+              Failed to load daily brief. {briefError}
+            </div>
+          ) : geminiBrief ? (
+            <div className="space-y-4">
+              <div className="flex items-start gap-3">
+                <Zap className="w-5 h-5 mt-1 text-[#b400ff]" />
+                <div>
+                  <h3 className="font-bold text-natural-text-primary dark:text-white mb-1">Daily Brief</h3>
+                  <p className="text-natural-accent-dark dark:text-[#d373ff] leading-relaxed font-medium">
+                    {geminiBrief.brief}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-3 pt-3 border-t border-natural-accent/10 dark:border-white/10">
+                <Target className="w-5 h-5 mt-1 text-blue-500" />
+                <div>
+                  <h3 className="font-bold text-natural-text-primary dark:text-white mb-1">Coaching & Strategy</h3>
+                  <p className="text-natural-text-secondary dark:text-white/80 leading-relaxed text-sm">
+                    {geminiBrief.coaching}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 pt-3 border-t border-natural-accent/10 dark:border-white/10">
+                <Activity className="w-5 h-5 mt-1 text-emerald-500" />
+                <div>
+                  <h3 className="font-bold text-natural-text-primary dark:text-white mb-1">Health & Explanation</h3>
+                  <p className="text-natural-text-secondary dark:text-white/80 leading-relaxed text-sm">
+                    {geminiBrief.explanation}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-4 p-4 rounded-xl bg-[#b400ff]/10 border border-[#b400ff]/20">
+                <p className="font-semibold italic text-[#b400ff] dark:text-[#d373ff] text-center">
+                  "{geminiBrief.motivation}"
+                </p>
+              </div>
+            </div>
+          ) : null}
         </div>
       </div>
 

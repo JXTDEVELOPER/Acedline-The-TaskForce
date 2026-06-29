@@ -568,6 +568,69 @@ Do not output any markdown formatting (like \`\`\`json), just the raw JSON objec
   }
 });
 
+app.post("/api/generate-daily-brief", async (req, res) => {
+  try {
+    const { analysis } = req.body;
+    if (!analysis) {
+      return res.status(400).json({ error: "Analysis data is required" });
+    }
+
+    const ai = getAiClient();
+    const systemInstruction = `You are a helpful, professional, and motivating AI assistant that acts as a Chief of Staff.
+You are given a structured JSON object representing the user's daily schedule analysis, including productivity metrics, calendar health, tasks, issues, and recommendations.
+
+Your job is to read this data and produce a JSON response with the following string fields:
+1. "brief": A short, clear Daily Brief text summarizing their workload, meetings, and free time for today.
+2. "coaching": Friendly coaching and practical advice based on any issues or conflicts found, or just general productivity tips if none.
+3. "motivation": A motivating statement to get them ready for the day.
+4. "explanation": A human-readable explanation of their current productivity score and calendar health.
+
+Keep all responses concise, encouraging, and highly readable.`;
+
+    const prompt = `Here is the structured analysis data:
+${JSON.stringify(analysis, null, 2)}`;
+
+    const response = await callGeminiWithRetry(() =>
+      ai.models.generateContent({
+        model: "gemini-3.5-flash",
+        contents: prompt,
+        config: {
+          systemInstruction: {
+            role: "system",
+            parts: [{ text: systemInstruction }],
+          },
+          temperature: 0.7,
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              brief: { type: Type.STRING },
+              coaching: { type: Type.STRING },
+              motivation: { type: Type.STRING },
+              explanation: { type: Type.STRING },
+            },
+            required: ["brief", "coaching", "motivation", "explanation"],
+          }
+        },
+      })
+    );
+
+    const jsonText = response.text || "{}";
+    let data;
+    try {
+      data = JSON.parse(jsonText);
+    } catch (e) {
+      const cleaned = jsonText.replace(/```json/g, "").replace(/```/g, "").trim();
+      data = JSON.parse(cleaned);
+    }
+
+    return res.json(data);
+  } catch (error: any) {
+    console.error("Daily brief generation error:", error);
+    return res.status(500).json({ error: getFriendlyErrorMessage(error) });
+  }
+});
+
 // API routes FIRST
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok" });
