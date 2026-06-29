@@ -57,12 +57,3 @@ This document outlines four potential future improvements for the Google Workspa
 2. **Shader Gallery:** Build a selector component allowing users to choose from multiple WebGL shader variants (e.g., Aurora, Particles, Wave) for the login and dashboard backgrounds.
 3. **Dynamic CSS Variables:** Extend the `ThemeInjector` to support custom primary and accent colors driven by user selection.
 4. **Performance Tuning:** Introduce a "Performance Mode" toggle that disables all WebGL shaders and heavy animations for low-end devices or extended battery life.
-
-## 7. Voice-Interactive Daily AI Brief
-**Description:** Enhance the Daily AI Brief by allowing the AI to read out the daily summary and proactive warnings using text-to-speech (TTS), and allowing users to respond via voice commands.
-
-**Implementation Steps:**
-1. **TTS Integration:** Integrate the Web Speech API or a cloud TTS service to read out the `proactiveWarning` and `greeting` when the user opens the app.
-2. **Speech Recognition:** Add a microphone button on the Daily AI Brief dashboard to let users reply to the AI (e.g., "Reschedule my Math Assignment to tomorrow").
-3. **Intent Parsing:** Route transcribed text to the Gemini API to parse intents and automatically update Firestore tasks or Google Calendar events.
-4. **UI Updates:** Add audio visualization animations to the Daily AI Brief header when the AI is speaking.

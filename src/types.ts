@@ -13,14 +13,6 @@ export interface Task {
   workspaceType?: "personal" | "team";
   assigneeEmail?: string;
   sharedWith?: string[];
-  estimatedDuration?: number; // in minutes
-  completionPercentage?: number; // 0-100
-  riskScore?: number;
-  riskCategory?: "Safe" | "Moderate Risk" | "High Risk" | "Critical";
-  confidenceLevel?: number;
-  completionProbability?: number;
-  riskExplanation?: string;
-  riskRecommendation?: string;
   createdAt: any; // Timestamp or Date
   updatedAt: any; // Timestamp or Date
 }

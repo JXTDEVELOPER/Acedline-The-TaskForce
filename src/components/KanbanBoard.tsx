@@ -13,7 +13,6 @@ interface KanbanBoardProps {
   onUpdateStage: (taskId: string, stage: string) => Promise<void>;
   onClearDone?: () => Promise<void>;
   isSyncing: boolean;
-  taskAnalyses?: Record<string, any>;
 }
 
 const STAGES = [
@@ -33,7 +32,6 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   onUpdateStage,
   onClearDone,
   isSyncing,
-  taskAnalyses = {}
 }) => {
   const handleDragEnd = async (result: DropResult) => {
     const { destination, source, draggableId } = result;
@@ -114,7 +112,6 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                               onCreateGoogleTask={onCreateGoogleTask}
                               onManageRegistration={onManageRegistration}
                               isSyncing={isSyncing}
-                              taskAnalysis={taskAnalyses[task.id]}
                             />
                           </div>
                         )}

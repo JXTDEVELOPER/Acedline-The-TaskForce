@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Check, Trash2, CalendarDays, ExternalLink, RefreshCw, Video, ListTodo, Sparkles, ChevronDown, ChevronRight, Target } from "lucide-react";
+import { Check, Trash2, CalendarDays, ExternalLink, RefreshCw, Video, ListTodo, Sparkles, ChevronDown, ChevronRight } from "lucide-react";
 import { Task } from "../types";
 
 interface TaskItemProps {
@@ -10,7 +10,6 @@ interface TaskItemProps {
   onCreateGoogleTask?: (task: Task) => Promise<void>;
   onManageRegistration?: (task: Task) => void;
   isSyncing: boolean;
-  taskAnalysis?: any;
 }
 
 export const TaskItem: React.FC<TaskItemProps> = ({
@@ -21,7 +20,6 @@ export const TaskItem: React.FC<TaskItemProps> = ({
   onCreateGoogleTask,
   onManageRegistration,
   isSyncing,
-  taskAnalysis
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -148,7 +146,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({
             ) : null}
 
             {/* Task badging (Due dates, priority, Meet links, Google Task links, Synced tag) */}
-            {(task.dueDate || task.priority || task.googleEventId || task.meetLink || task.googleTaskId || (onCreateMeet && !task.completed) || (onCreateGoogleTask && !task.completed) || taskAnalysis) ? (
+            {(task.dueDate || task.priority || task.googleEventId || task.meetLink || task.googleTaskId || (onCreateMeet && !task.completed) || (onCreateGoogleTask && !task.completed)) ? (
               <div className="flex flex-wrap items-center gap-2">
             {(task.priority || task.dueDate) && (() => {
               const dynPri = task.priority || "low";
@@ -159,24 +157,6 @@ export const TaskItem: React.FC<TaskItemProps> = ({
                   "bg-green-50 text-green-600 border-green-200"
                 }`}>
                   {dynPri}
-                </span>
-              );
-            })()}
-            {taskAnalysis && (() => {
-              let aiBadgeColor = "bg-neutral-100 text-neutral-700 border-neutral-200";
-              if (taskAnalysis.riskCategory === "Critical") {
-                aiBadgeColor = "bg-red-100 text-red-800 border-red-300";
-              } else if (taskAnalysis.riskCategory === "High Risk") {
-                aiBadgeColor = "bg-orange-100 text-orange-800 border-orange-300";
-              } else if (taskAnalysis.riskCategory === "Moderate Risk") {
-                aiBadgeColor = "bg-yellow-100 text-yellow-800 border-yellow-300";
-              } else if (taskAnalysis.riskCategory === "Safe") {
-                aiBadgeColor = "bg-green-100 text-green-800 border-green-300";
-              }
-              return (
-                <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide border ${aiBadgeColor}`} title={`Confidence: ${taskAnalysis.confidenceLevel}%`}>
-                  <Target className="w-2.5 h-2.5" />
-                  {taskAnalysis.riskCategory} ({taskAnalysis.riskScore}/100)
                 </span>
               );
             })()}
@@ -270,19 +250,6 @@ export const TaskItem: React.FC<TaskItemProps> = ({
             ) : null}
           </div>
             ) : null}
-            
-            {taskAnalysis && isExpanded && (
-              <div className="mt-3 bg-natural-panel/50 backdrop-blur-md rounded-lg p-3 text-xs border border-natural-border shadow-sm animate-fade-in">
-                <p className="text-natural-text-primary font-medium mb-1 flex items-start gap-1.5">
-                   <Sparkles className="w-3.5 h-3.5 text-natural-accent shrink-0 mt-0.5" />
-                   {taskAnalysis.riskExplanation}
-                </p>
-                <div className="flex items-center gap-1.5 mt-2">
-                  <span className="font-bold text-natural-accent text-[10px] uppercase tracking-wide bg-natural-accent/10 px-2 py-0.5 rounded-md">Recommendation</span>
-                  <span className="text-natural-text-secondary font-medium">{taskAnalysis.riskRecommendation}</span>
-                </div>
-              </div>
-            )}
           </div>
         )}
       </div>

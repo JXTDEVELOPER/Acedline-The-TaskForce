@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-export type DashboardView = "daily-brief" | "calendar-analyzer" | "event-management" | "self-directed" | "classroom" | "calendar" | "boards";
+export type DashboardView = "event-management" | "self-directed" | "classroom" | "calendar" | "boards";
 
 export type FontStyle = 'Inter' | 'system-ui' | 'serif' | 'monospace';
 
@@ -14,8 +14,6 @@ export interface ThemeSettings {
 
 export interface AppSettings {
   enableAiCoach: boolean;
-  enableProactiveAi: boolean;
-  hasPromptedProactiveAi: boolean;
   enableAiEmailDrafter: boolean;
   enableAiDocs: boolean;
   enableAiSlides: boolean;
@@ -27,14 +25,10 @@ export interface AppSettings {
   sidebarOrder: DashboardView[];
   sidebarVisibility: Record<DashboardView, boolean>;
   theme?: ThemeSettings;
-  workingHoursStart: string;
-  workingHoursEnd: string;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
   enableAiCoach: true,
-  enableProactiveAi: false,
-  hasPromptedProactiveAi: false,
   enableAiEmailDrafter: true,
   enableAiDocs: true,
   enableAiSlides: true,
@@ -43,12 +37,8 @@ const DEFAULT_SETTINGS: AppSettings = {
   enableAiKeep: true,
   enableAiClassroom: true,
   enableShader: true,
-  workingHoursStart: "09:00",
-  workingHoursEnd: "17:00",
-  sidebarOrder: ["daily-brief", "calendar-analyzer", "event-management", "self-directed", "classroom", "calendar", "boards"],
+  sidebarOrder: ["event-management", "self-directed", "classroom", "calendar", "boards"],
   sidebarVisibility: {
-    "daily-brief": true,
-    "calendar-analyzer": true,
     "event-management": true,
     "self-directed": true,
     "classroom": true,
@@ -69,21 +59,7 @@ export function useSettings() {
     const saved = localStorage.getItem('app_settings');
     if (saved) {
       try {
-        const parsed = JSON.parse(saved);
-        // Ensure new views are in sidebarOrder if missing
-        if (parsed.sidebarOrder && !parsed.sidebarOrder.includes("daily-brief")) {
-          parsed.sidebarOrder = ["daily-brief", ...parsed.sidebarOrder];
-        }
-        if (parsed.sidebarVisibility && parsed.sidebarVisibility["daily-brief"] === undefined) {
-          parsed.sidebarVisibility["daily-brief"] = true;
-        }
-        if (parsed.sidebarOrder && !parsed.sidebarOrder.includes("calendar-analyzer")) {
-          parsed.sidebarOrder = ["calendar-analyzer", ...parsed.sidebarOrder];
-        }
-        if (parsed.sidebarVisibility && parsed.sidebarVisibility["calendar-analyzer"] === undefined) {
-          parsed.sidebarVisibility["calendar-analyzer"] = true;
-        }
-        return { ...DEFAULT_SETTINGS, ...parsed };
+        return { ...DEFAULT_SETTINGS, ...JSON.parse(saved) };
       } catch (e) {
         return DEFAULT_SETTINGS;
       }

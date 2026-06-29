@@ -44,19 +44,17 @@ async function callGeminiWithRetry<T>(
     } catch (error: any) {
       attempt++;
       const errorMessage = error instanceof Error ? error.message : String(error);
-      const isRetriable = 
+      const isRateLimit = 
         errorMessage.includes("429") || 
-        errorMessage.includes("503") || 
         errorMessage.toLowerCase().includes("quota") || 
         errorMessage.toUpperCase().includes("RESOURCE_EXHAUSTED") ||
-        errorMessage.toUpperCase().includes("UNAVAILABLE") ||
-        (error?.status && (error.status === 429 || error.status === 503 || error.status === 500)) ||
-        (error?.code && (error.code === 429 || error.code === 503 || error.code === 500));
+        (error?.status && error.status === 429) ||
+        (error?.code && error.code === 429);
 
-      if (isRetriable && attempt < maxRetries) {
+      if (isRateLimit && attempt < maxRetries) {
         // Calculate exponential backoff delay with random jitter
         const delay = initialDelayMs * Math.pow(2.2, attempt - 1) + Math.random() * 500;
-        console.warn(`[Gemini API] Request rate limited or unavailable (Attempt ${attempt}/${maxRetries}). Retrying in ${Math.round(delay)}ms... Error context: ${errorMessage}`);
+        console.warn(`[Gemini API] Request rate limited (Attempt ${attempt}/${maxRetries}). Retrying in ${Math.round(delay)}ms... Error context: ${errorMessage}`);
         await new Promise((resolve) => setTimeout(resolve, delay));
         continue;
       }
@@ -80,16 +78,6 @@ function getFriendlyErrorMessage(error: any): string {
     (error?.code === 429)
   ) {
     return "Your Google AI Studio billing or prepayment credits are depleted. Please check your project and billing settings at https://ai.studio/projects. In the meantime, you can continue using the application manually without AI features.";
-  }
-  
-  if (
-    lowerMessage.includes("503") ||
-    lowerMessage.includes("unavailable") ||
-    lowerMessage.includes("high demand") ||
-    (error?.status === 503) ||
-    (error?.code === 503)
-  ) {
-    return "The AI model is currently experiencing high demand and is unavailable. Please try again in a few moments.";
   }
   
   if (
@@ -370,30 +358,12 @@ Always help them complete it.`;
 
 app.post("/api/productivity-coach", async (req, res) => {
   try {
-    const { messages, deepThinking, context } = req.body;
+    const { messages, deepThinking } = req.body;
     if (!messages || !Array.isArray(messages)) {
       return res.status(400).json({ error: "Invalid messages array" });
     }
 
-    let isProactiveRequest = false;
-    let actualMessages = messages;
-    
-    if (messages.length === 1 && messages[0].content === "GENERATE_PROACTIVE_GREETING_WITH_WARNINGS_ONLY") {
-      isProactiveRequest = true;
-      actualMessages = [{
-        role: "user",
-        content: `You are a proactive AI productivity companion. I am looking at my dashboard right now.
-        
-Current time: ${context?.currentTime}
-Active Tasks: ${JSON.stringify(context?.tasks || [], null, 2)}
-
-Analyze my tasks and predict my failure risk. Generate a short, punchy proactive warning (no markdown formatting, no bold text, no bullet points, just plain conversational text). 
-Example format:
-"Joshua, you have 4 assignments due in the next 72 hours. If you continue at your current pace, there is an 83% chance you'll miss Database Lab."`
-      }];
-    }
-
-    const formattedMessages = actualMessages.map((m: any) => ({
+    const formattedMessages = messages.map((m: any) => ({
       role: m.role === "model" ? "model" : "user",
       parts: [{ text: m.content }],
     }));
@@ -594,138 +564,6 @@ Do not output any markdown formatting (like \`\`\`json), just the raw JSON objec
     return res.json(data);
   } catch (error: any) {
     console.error("Smart autofill error:", error);
-    return res.status(500).json({ error: getFriendlyErrorMessage(error) });
-  }
-});
-
-app.post("/api/analyze-deadlines", async (req, res) => {
-  try {
-    const { tasks, workingHours, currentTime, calendarEvents } = req.body;
-    
-    if (!tasks || !Array.isArray(tasks)) {
-      return res.status(400).json({ error: "Tasks array is required" });
-    }
-    
-    if (tasks.length === 0) {
-      return res.json({ analyses: {} });
-    }
-
-    const ai = getAiClient();
-    const systemInstruction = `You are a proactive AI productivity companion. Your objective is to predict whether users are likely to miss task deadlines before they actually do.
-You will be provided with:
-1. Current time
-2. User's configured working hours
-3. A list of active tasks (each with an ID, title, due date, estimated duration, priority, completion percentage)
-4. A list of calendar events indicating busy periods
-
-You must analyze every task carefully considering all provided context, overlapping commitments, overdue status, and free time available within working hours.
-
-For each task, calculate and return:
-- riskScore: 0 to 100
-- riskCategory: Must be one of "Safe", "Moderate Risk", "High Risk", "Critical"
-- confidenceLevel: 0 to 100
-- completionProbability: 0 to 100
-- riskExplanation: A short explanation (1-2 sentences) such as: "Based on your schedule, you only have 2.5 free hours before this deadline while the estimated effort is 5 hours."
-- riskRecommendation: A proactive recommendation, e.g. "Start today", "Split task into subtasks", "Reschedule lower priority work", "Move calendar events", "Increase daily focus time".
-
-Output a single JSON object where the keys are task IDs and the values are objects with the above fields. Do not output markdown code blocks.`;
-
-    const prompt = JSON.stringify({
-      currentTime,
-      workingHours,
-      tasks,
-      calendarEvents: calendarEvents || []
-    }, null, 2);
-
-    const response = await callGeminiWithRetry(() =>
-      ai.models.generateContent({
-        model: "gemini-3.5-flash",
-        contents: prompt,
-        config: {
-          systemInstruction: {
-            role: "system",
-            parts: [{ text: systemInstruction }],
-          },
-          temperature: 0.1,
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            additionalProperties: {
-              type: Type.OBJECT,
-              properties: {
-                riskScore: { type: Type.INTEGER },
-                riskCategory: { type: Type.STRING },
-                confidenceLevel: { type: Type.INTEGER },
-                completionProbability: { type: Type.INTEGER },
-                riskExplanation: { type: Type.STRING },
-                riskRecommendation: { type: Type.STRING },
-              },
-              required: ["riskScore", "riskCategory", "confidenceLevel", "completionProbability", "riskExplanation", "riskRecommendation"]
-            }
-          }
-        },
-      })
-    );
-
-    const textResponse = response.text || "{}";
-    const data = JSON.parse(textResponse.trim());
-    return res.json({ analyses: data });
-  } catch (error: any) {
-    console.error("Analyze deadlines error:", error);
-    return res.status(500).json({ error: getFriendlyErrorMessage(error) });
-  }
-});
-
-app.post("/api/ai-insights", async (req, res) => {
-  try {
-    const { userName, localData, currentTime, localTime } = req.body;
-    const ai = getAiClient();
-    
-    const systemInstruction = `You are a Productivity Coach AI. You are given a deterministically calculated analysis of the user's day, including metrics, issues, and an optimized schedule.
-You must NOT perform any numerical calculations. Use the provided data and context to generate a cohesive human-readable response.
-Generate:
-1. "greeting": A polite greeting using the user's name and context-appropriate time of day (e.g. "Good morning", "Good afternoon", or "Good evening" followed by their first name) derived from the provided currentTime / localTime.
-2. "proactiveWarning": A short, punchy proactive warning if deadlineRiskScore > 50 or if there are high severity issues. Otherwise, an encouraging message.
-3. "insights": An array of 2-3 short strings offering interesting observations based on their metrics (e.g., "You have a solid 3-hour block of deep work today.", "Meeting heavy day ahead.").
-4. "recommendations": An array of objects { title, description, action } with actionable advice based on the provided "issues".
-5. "coachMessage": A short, motivational message to keep them focused.
-
-Respond strictly in JSON format matching this schema:
-{
-  "greeting": string,
-  "proactiveWarning": string,
-  "insights": string[],
-  "recommendations": [{ "title": string, "description": string, "action": string }],
-  "coachMessage": string
-}`;
-
-    const prompt = JSON.stringify({
-      userName,
-      currentTime,
-      localTime,
-      localData
-    }, null, 2);
-
-    const response = await callGeminiWithRetry(() =>
-      ai.models.generateContent({
-        model: "gemini-3.5-flash",
-        contents: prompt,
-        config: {
-          systemInstruction: {
-            role: "system",
-            parts: [{ text: systemInstruction }],
-          },
-          temperature: 0.2,
-          responseMimeType: "application/json",
-        },
-      })
-    );
-
-    const textResponse = response.text || "{}";
-    const data = JSON.parse(textResponse.trim());
-    return res.json(data);
-  } catch (error: any) {
-    console.error("AI Insights error:", error);
     return res.status(500).json({ error: getFriendlyErrorMessage(error) });
   }
 });

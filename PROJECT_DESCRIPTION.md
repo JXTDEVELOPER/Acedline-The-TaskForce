@@ -25,8 +25,6 @@ The application unifies task management, AI productivity planning, and Google Wo
 Here are the specific capabilities and actions users can perform:
 
 ### 1. Unified Task & Event Management
-- **AI Calendar Analyzer**: A continuous scheduling engine that proactively detects conflicts, overload, and deadline risks, then automatically generates an optimized daily plan to maximize deep work and prevent burnout.
-- **Daily AI Brief**: Start your day with a proactive AI summary that outlines your schedule, highlights overdue tasks, predicts failure risks based on your current pace, and provides a recommended timeline.
 - **Create Tasks**: Create tasks with titles, descriptions, due dates, priorities, and assignees.
 - **Toggle Completion**: Mark tasks as done quickly across multiple views (Kanban, Calendar, Self-Directed Activity).
 - **View Modes**: Switch between a Kanban board for workflow states, a Calendar View for date-oriented planning, and a unified list view.
