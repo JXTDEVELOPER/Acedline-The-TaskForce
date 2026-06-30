@@ -25,6 +25,7 @@ export interface AppSettings {
   sidebarOrder: DashboardView[];
   sidebarVisibility: Record<DashboardView, boolean>;
   theme?: ThemeSettings;
+  whatsappNumber?: string;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -52,7 +53,8 @@ const DEFAULT_SETTINGS: AppSettings = {
     accentColor: '',
     fontColor: '',
     fontFamily: 'Inter',
-  }
+  },
+  whatsappNumber: '',
 };
 
 export function useSettings() {
@@ -60,7 +62,23 @@ export function useSettings() {
     const saved = localStorage.getItem('app_settings');
     if (saved) {
       try {
-        return { ...DEFAULT_SETTINGS, ...JSON.parse(saved) };
+        const parsed = JSON.parse(saved);
+        
+        // Ensure new views like "welcome" are added to sidebarOrder if missing
+        let order = parsed.sidebarOrder || DEFAULT_SETTINGS.sidebarOrder;
+        if (!order.includes("welcome")) {
+          order = ["welcome", ...order];
+        }
+
+        // Ensure new views have a visibility entry
+        const visibility = { ...DEFAULT_SETTINGS.sidebarVisibility, ...(parsed.sidebarVisibility || {}) };
+
+        return { 
+          ...DEFAULT_SETTINGS, 
+          ...parsed,
+          sidebarOrder: order,
+          sidebarVisibility: visibility
+        };
       } catch (e) {
         return DEFAULT_SETTINGS;
       }

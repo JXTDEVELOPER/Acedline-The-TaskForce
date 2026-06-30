@@ -28,6 +28,7 @@ import {
 } from "./lib/calendar";
 import { createMeetSpace } from "./lib/meet";
 import { createGoogleTask, updateGoogleTask, deleteGoogleTask, listGoogleTasks } from "./lib/tasks";
+import { clearCache } from "./lib/cache";
 import { Task } from "./types";
 import { GsiButton } from "./components/GsiButton";
 import { TaskForm } from "./components/TaskForm";
@@ -62,6 +63,7 @@ export default function App() {
   const [registerTaskId, setRegisterTaskId] = useState<string | null>(null);
   const [taskToManageRegistration, setTaskToManageRegistration] = useState<Task | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [pendingWhatsAppTask, setPendingWhatsAppTask] = useState<{title: string, dueDate?: string, priority: string} | null>(null);
   const [activeView, setActiveView] = useState<"welcome" | "event-management" | "self-directed" | "classroom" | "calendar" | "boards" | "debug" | "settings">("welcome");
   const [viewMode, setViewMode] = useState<"list" | "kanban">("list");
 
@@ -96,6 +98,24 @@ export default function App() {
   const [calendarError, setCalendarError] = useState<string | null>(null);
   const [importingEventIds, setImportingEventIds] = useState<string[]>([]);
   const [isAddingEvent, setIsAddingEvent] = useState(false);
+  const [lastSynced, setLastSynced] = useState<Date>(new Date());
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefreshData = async () => {
+    if (!token) return;
+    setIsRefreshing(true);
+    try {
+      clearCache();
+      const gEvents = await listCalendarEvents(token, undefined, 50, true);
+      setCalendarEvents(gEvents);
+      // We could also refresh Google Tasks if needed, but it's done via import modal
+      setLastSynced(new Date());
+    } catch (err) {
+      console.error("Failed to refresh data:", err);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   // Load Registration route parameter
   useEffect(() => {
@@ -402,6 +422,33 @@ export default function App() {
           updatedAt: new Date(),
         };
         setTaskToManageRegistration(newTaskRecord);
+      }
+
+      // 5. Send WhatsApp Alert if task is critical/high priority
+      if (priority === "high") {
+        if (!settings.whatsappNumber) {
+          setPendingWhatsAppTask({ title, dueDate, priority });
+        } else {
+          try {
+            const response = await fetch("/api/send-whatsapp-alert", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                taskTitle: title,
+                taskDueDate: dueDate,
+                priority,
+                userWhatsAppNumber: settings.whatsappNumber
+              })
+            });
+            
+            if (!response.ok) {
+              const errData = await response.json();
+              console.warn("WhatsApp alert warning:", errData.error);
+            }
+          } catch (alertError) {
+            console.error("Failed to call WhatsApp alert endpoint:", alertError);
+          }
+        }
       }
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, `tasks/${tempTaskId}`);
@@ -891,11 +938,20 @@ export default function App() {
     .toUpperCase();
 
   return (
-    <div className="min-h-screen bg-natural-bg dark:bg-[#02050f] text-natural-text-primary dark:text-white antialiased font-sans flex flex-col md:flex-row relative overflow-hidden">
+    <div className="h-screen w-full bg-natural-bg dark:bg-[#02050f] text-natural-text-primary dark:text-white antialiased font-sans flex overflow-hidden">
       <ThemeInjector theme={settings.theme} />
       <LoginBackground enableShader={settings.enableShader} />
+      
+      {/* Mobile Overlay */}
+      {isSidebarOpen && (
+        <div 
+          className="md:hidden fixed inset-0 bg-black/50 z-40 backdrop-blur-sm"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className={`transition-all duration-300 ease-in-out border-natural-border dark:border-white/10 bg-white/50 dark:bg-black/20 backdrop-blur-2xl flex flex-col shrink-0 z-10 ${isSidebarOpen ? "w-full md:w-64 p-6 md:border-r border-b md:border-b-0" : "w-0 md:w-20 p-0 md:p-4 md:border-r overflow-hidden"} md:h-screen md:sticky md:top-0 relative shadow-[4px_0_24px_rgba(0,0,0,0.05)] dark:shadow-[4px_0_24px_rgba(0,0,0,0.5)]`}>
+      <aside className={`transition-all duration-300 ease-in-out border-natural-border dark:border-white/10 bg-white/90 dark:bg-black/80 backdrop-blur-2xl flex flex-col shrink-0 z-50 h-screen fixed md:relative ${isSidebarOpen ? "w-[280px] p-6 border-r translate-x-0" : "w-[280px] p-6 border-r -translate-x-full md:translate-x-0 md:w-[80px] md:p-4"} shadow-[4px_0_24px_rgba(0,0,0,0.05)] dark:shadow-[4px_0_24px_rgba(0,0,0,0.5)]`}>
         <div 
           onClick={() => setIsSidebarOpen(!isSidebarOpen)}
           className={`flex items-center gap-2 mb-8 cursor-pointer hover:opacity-80 transition-opacity ${!isSidebarOpen && "justify-center mb-6"}`}
@@ -952,6 +1008,25 @@ export default function App() {
         </nav>
 
         <div className={`mt-auto pt-6 border-t border-white/10 flex flex-col gap-4 ${!isSidebarOpen && "items-center"}`}>
+          <div className="px-2">
+            <button
+              onClick={handleRefreshData}
+              disabled={isRefreshing}
+              className={`flex items-center justify-center w-full gap-2 px-3 py-2 text-xs rounded-lg transition-colors border ${isRefreshing ? "bg-white/5 border-white/10 text-white/40 cursor-not-allowed" : "bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:text-white"}`}
+            >
+              <RefreshCcw className={`h-3 w-3 ${isRefreshing ? "animate-spin" : ""}`} />
+              {isSidebarOpen && (
+                <span className="flex-1 text-left">
+                  {isRefreshing ? "Refreshing..." : "Refresh Cache"}
+                </span>
+              )}
+            </button>
+            {isSidebarOpen && (
+              <div className="mt-2 text-[10px] text-center text-white/40">
+                Last synced: {lastSynced.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </div>
+            )}
+          </div>
 
           <div className={`flex items-center gap-3 ${!isSidebarOpen && "justify-center"}`}>
             {user.photoURL ? (
@@ -1010,6 +1085,22 @@ export default function App() {
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden z-10 relative">
+        {/* Mobile Header */}
+        <div className="md:hidden flex items-center justify-between p-4 border-b border-natural-border dark:border-white/10 bg-white/50 dark:bg-black/20 backdrop-blur-md z-30">
+          <div className="flex items-center gap-2">
+             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#b400ff] text-white shadow-[0_0_15px_rgba(180,0,255,0.4)]">
+               <LayoutList className="h-4 w-4" />
+             </div>
+             <span className="text-xl font-semibold tracking-tight text-natural-text-primary dark:text-white">Taskspace</span>
+          </div>
+          <button 
+            onClick={() => setIsSidebarOpen(true)}
+            className="p-2 rounded-lg bg-natural-accent/10 text-natural-accent hover:bg-natural-accent/20"
+          >
+            <Menu className="w-6 h-6" />
+          </button>
+        </div>
+
         {activeView === "welcome" ? (
           <WelcomeDashboard 
             user={user} 
@@ -1472,6 +1563,85 @@ export default function App() {
                   className="rounded-full border border-natural-border bg-white px-5 py-2 font-semibold text-natural-text-primary transition-all hover:bg-neutral-50 active:scale-95 cursor-pointer shadow-xs"
                 >
                   Close Panel
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {pendingWhatsAppTask && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-neutral-950/40 backdrop-blur-xs"
+              onClick={() => setPendingWhatsAppTask(null)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="relative w-full max-w-md overflow-hidden rounded-2xl border border-natural-border bg-white dark:bg-[#151515] p-6 shadow-xl"
+            >
+              <h3 className="text-lg font-semibold text-natural-text-dark dark:text-white mb-2">WhatsApp Notifications</h3>
+              <p className="text-sm text-natural-text-secondary dark:text-neutral-400 mb-4">
+                You added a critical task. Enter your WhatsApp number to receive an alert. You can change this later in Settings.
+              </p>
+              
+              <div className="mb-4">
+                <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-1">WhatsApp Number</label>
+                <input
+                  type="tel"
+                  id="whatsapp-number-input"
+                  placeholder="e.g. +1234567890"
+                  className="w-full bg-natural-panel dark:bg-[#1D1B1A] border border-natural-border rounded-lg p-2 text-sm text-natural-text-dark focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700/50 rounded-lg text-xs text-yellow-800 dark:text-yellow-200 flex items-start gap-2 mb-6">
+                <Bug className="w-4 h-4 shrink-0 mt-0.5" />
+                <p>
+                  <strong>Warning:</strong> WhatsApp messages can only be seen from the builder's phone because it's using the Twilio Sandbox. You must send the sandbox join message from your phone first.
+                </p>
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPendingWhatsAppTask(null)}
+                  className="rounded-full px-4 py-2 text-xs font-semibold text-natural-text-primary hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                >
+                  Skip
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const numInput = document.getElementById('whatsapp-number-input') as HTMLInputElement;
+                    const num = numInput.value.trim();
+                    if (num) {
+                      updateSettings({ whatsappNumber: num });
+                      
+                      try {
+                        await fetch("/api/send-whatsapp-alert", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            taskTitle: pendingWhatsAppTask.title,
+                            taskDueDate: pendingWhatsAppTask.dueDate,
+                            priority: pendingWhatsAppTask.priority,
+                            userWhatsAppNumber: num
+                          })
+                        });
+                      } catch (e) {
+                        console.error("Failed to send WhatsApp alert via modal", e);
+                      }
+                    }
+                    setPendingWhatsAppTask(null);
+                  }}
+                  className="rounded-full bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-700 transition-colors"
+                >
+                  Save & Notify
                 </button>
               </div>
             </motion.div>

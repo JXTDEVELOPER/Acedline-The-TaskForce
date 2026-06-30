@@ -6,6 +6,7 @@ import { Task } from "../types";
 import { createGoogleDocWithInstructions, draftEmailWithInstructions, createGoogleSlidesPresentation, createGoogleSheetForTask, createGoogleKeepNote, createGoogleForm, createGoogleClassroom } from "../lib/workspace";
 import { TaskForm } from "./TaskForm";
 import { OverdueTasksBanner } from "./OverdueTasksBanner";
+import { getCached, setCached } from "../lib/cache";
 
 import { AppSettings } from '../hooks/useSettings';
 
@@ -67,19 +68,24 @@ export function SelfDirectedActivityDashboard({
     setIsDraftingEmailPanel(true);
     setEmailDraftSuccess(false);
     try {
-      const response = await fetch("/api/generate-email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic: emailTopic })
-      });
-      
-      let generatedBody = "";
-      if (response.ok) {
-         const data = await response.json();
-         generatedBody = data.text;
-      } else {
-        // Fallback or handle error
-         generatedBody = `Email draft for: ${emailTopic}\n\nPlease expand on this topic.`;
+      const cacheKey = `email-draft-${emailTopic.trim()}`;
+      let generatedBody = getCached<string>(cacheKey);
+
+      if (!generatedBody) {
+        const response = await fetch("/api/generate-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ topic: emailTopic })
+        });
+        
+        if (response.ok) {
+           const data = await response.json();
+           generatedBody = data.text;
+           if (generatedBody) setCached(cacheKey, generatedBody);
+        } else {
+          // Fallback or handle error
+           generatedBody = `Email draft for: ${emailTopic}\n\nPlease expand on this topic.`;
+        }
       }
       
       await draftEmailWithInstructions(emailTopic, generatedBody, token, emailRecipient);
@@ -157,15 +163,20 @@ export function SelfDirectedActivityDashboard({
     setIsDrafting(task.id);
     try {
       // 1. Get AI Instructions
-      const res = await fetch("/api/generate-action-plan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ taskTitle: task.title, taskDescription: task.description }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to generate instructions");
+      const cacheKey = `action-plan-${task.id}`;
+      let instructions = getCached<string>(cacheKey);
 
-      const instructions = data.instructions;
+      if (!instructions) {
+        const res = await fetch("/api/generate-action-plan", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ taskTitle: task.title, taskDescription: task.description }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Failed to generate instructions");
+        instructions = data.instructions;
+        if (instructions) setCached(cacheKey, instructions);
+      }
 
       // 2. Draft using Workspace API
       if (type === 'doc') {

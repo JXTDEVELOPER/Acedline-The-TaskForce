@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Plus, Calendar, Clock, Sparkles, Video, ListTodo, Mic, Info, Link as LinkIcon, X, Copy, Check } from "lucide-react";
+import { getCached, setCached } from "../lib/cache";
 import { Task } from "../types";
 
 interface TaskFormProps {
@@ -185,15 +186,25 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onAddTask, isSyncing, worksp
         }
       }
 
-      const res = await fetch("/api/smart-task-autofill", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: title.trim(), dueDate: finalDueDate }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.description) setDescription(data.description);
-        if (data.priority) setPriority(data.priority);
+      const cacheKey = `autofill-${title.trim()}-${finalDueDate || 'none'}`;
+      let cachedResult = getCached<any>(cacheKey);
+
+      if (!cachedResult) {
+        const res = await fetch("/api/smart-task-autofill", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title: title.trim(), dueDate: finalDueDate }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          cachedResult = data;
+          setCached(cacheKey, data);
+        }
+      }
+
+      if (cachedResult) {
+        if (cachedResult.description) setDescription(cachedResult.description);
+        if (cachedResult.priority) setPriority(cachedResult.priority);
       }
     } catch (err) {
       console.error("Autofill failed", err);

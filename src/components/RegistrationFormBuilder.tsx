@@ -7,6 +7,7 @@ import { Sparkles, Calendar, Link, Clipboard, Check, Users, Trash2, X, Eye, File
 import { motion, AnimatePresence } from "motion/react";
 import { createGoogleForm, syncGoogleFormFields, fetchGoogleFormResponses } from "../lib/forms";
 import { sendGmailMessage } from "../lib/gmail";
+import { getCached, setCached } from "../lib/cache";
 
 interface RegistrationFormBuilderProps {
   task: Task;
@@ -268,25 +269,35 @@ export const RegistrationFormBuilder: React.FC<RegistrationFormBuilderProps> = (
     setPreviewFields(null);
 
     try {
-      const response = await fetch("/api/generate-form", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prompt,
-          title: task.title,
-        }),
-      });
+      const cacheKey = `generate-form-${task.id}-${prompt.trim()}`;
+      let cachedFields = getCached<FormField[]>(cacheKey);
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Form generation target content errored.");
+      if (!cachedFields) {
+        const response = await fetch("/api/generate-form", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            prompt,
+            title: task.title,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Form generation target content errored.");
+        }
+
+        const data = await response.json();
+        if (data && data.fields) {
+          cachedFields = data.fields;
+          setCached(cacheKey, cachedFields);
+        } else {
+          throw new Error("Invalid output format returned by the model.");
+        }
       }
-
-      const data = await response.json();
-      if (data && data.fields) {
-        setPreviewFields(data.fields);
-      } else {
-        throw new Error("Invalid output format returned by the model.");
+      
+      if (cachedFields) {
+        setPreviewFields(cachedFields);
       }
     } catch (err: any) {
       console.error("Form generation failed:", err);

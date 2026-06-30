@@ -50,7 +50,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
-      <div className="flex gap-4 overflow-x-auto pb-4 pt-2">
+      <div className="flex flex-wrap gap-4 pb-4 pt-2 lg:flex-nowrap lg:overflow-x-auto">
         {STAGES.map((stage) => {
           const stageTasks = tasks.filter((t) => {
             const effectiveStage = t.completed ? "done" : (t.stage === "done" && !t.completed ? "todo" : (t.stage || "todo"));
@@ -60,7 +60,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
           return (
             <div
               key={stage.id}
-              className="flex flex-col flex-shrink-0 w-80 bg-natural-bg dark:bg-[#151515] rounded-2xl border border-natural-border shadow-xs overflow-hidden h-fit max-h-[75vh]"
+              className="flex flex-col bg-natural-bg dark:bg-[#151515] rounded-2xl border border-natural-border shadow-xs overflow-hidden h-fit max-h-[75vh] w-full md:w-[calc(50%-0.5rem)] lg:w-80 flex-shrink-0"
             >
               <div className="p-4 border-b border-natural-border flex items-center justify-between bg-white dark:bg-[#0b0b0c]">
                 <div className="flex items-center gap-2">

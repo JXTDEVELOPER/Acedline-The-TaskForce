@@ -91,10 +91,13 @@ export async function createCalendarEvent(
 /**
  * Lists upcoming and recent events from the user's primary Google Calendar.
  */
+import { getCached, setCached } from "./cache";
+
 export async function listCalendarEvents(
   accessToken: string,
   timeMin?: string,
-  maxResults: number = 50
+  maxResults: number = 50,
+  forceRefresh: boolean = false
 ): Promise<any[]> {
   const params = new URLSearchParams({
     singleEvents: "true",
@@ -109,6 +112,12 @@ export async function listCalendarEvents(
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     params.append("timeMin", today.toISOString());
+  }
+
+  const cacheKey = `calendar-events-${params.toString()}`;
+  if (!forceRefresh) {
+    const cached = getCached<any[]>(cacheKey);
+    if (cached) return cached;
   }
 
   const response = await fetch(
@@ -129,7 +138,9 @@ export async function listCalendarEvents(
   }
 
   const data = await response.json();
-  return data.items || [];
+  const items = data.items || [];
+  setCached(cacheKey, items);
+  return items;
 }
 
 /**

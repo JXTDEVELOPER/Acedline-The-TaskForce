@@ -99,8 +99,17 @@ export async function updateGoogleTask(task: Task, accessToken: string): Promise
 /**
  * Lists Google Tasks from the default list.
  */
-export async function listGoogleTasks(accessToken: string): Promise<any[]> {
+import { getCached, setCached } from "./cache";
+
+export async function listGoogleTasks(accessToken: string, forceRefresh: boolean = false): Promise<any[]> {
   const url = "https://tasks.googleapis.com/tasks/v1/lists/@default/tasks?showCompleted=true&showHidden=true&maxResults=100";
+  const cacheKey = `google-tasks-default`;
+  
+  if (!forceRefresh) {
+    const cached = getCached<any[]>(cacheKey);
+    if (cached) return cached;
+  }
+
   const response = await fetch(url, {
     method: "GET",
     headers: {
@@ -115,7 +124,9 @@ export async function listGoogleTasks(accessToken: string): Promise<any[]> {
   }
 
   const data = await response.json();
-  return data.items || [];
+  const items = data.items || [];
+  setCached(cacheKey, items);
+  return items;
 }
 export async function deleteGoogleTask(googleTaskId: string, accessToken: string): Promise<void> {
   const url = `https://tasks.googleapis.com/tasks/v1/lists/@default/tasks/${googleTaskId}`;

@@ -2,7 +2,15 @@
 
 This document outlines four potential future improvements for the Google Workspace-Integrated Task Manager, along with step-by-step implementation plans.
 
-## 1. Recurring Tasks (Schedule Support)
+## 1. Welcome Dashboard Enhanced Analytics & Widgets
+**Description:** Expand the Recharts visualizations on the Welcome Dashboard to provide historical trends, burn-down charts, and customizable drag-and-drop widgets.
+
+**Implementation Steps:**
+1. **Historical Data Storage:** Create an aggregation script or Firebase Cloud Function to periodically snapshot completed task counts daily/weekly and store them in an `analytics` collection in Firestore.
+2. **Chart Components:** Add BarCharts and AreaCharts using Recharts to visualize task burn-down rates and completion velocity over time.
+3. **Widget System:** Refactor the Welcome Dashboard layout into a modular grid using an interactive library (like `dnd-kit`), allowing users to rearrange, hide, or resize individual metric cards (e.g., AI Functions, Progress Rings, Quick Links).
+
+## 2. Recurring Tasks (Schedule Support)
 **Description:** Allow tasks to automatically recreate themselves on a daily, weekly, or monthly schedule.
 
 **Implementation Steps:**
@@ -32,10 +40,10 @@ This document outlines four potential future improvements for the Google Workspa
 4. **UI Update:** Update the Dashboard to group tasks by `parentId` using a nested accordion or indented list view, ensuring that parent tasks automatically calculate their completion percentage based on children.
 
 ## 4. Offline Mode & PWA Support
-**Description:** Enable users to view and create tasks without an active internet connection, syncing changes to the cloud once reconnected.
+**Description:** Enable users to view and create tasks without an active internet connection, syncing changes to the cloud once reconnected. This addresses our previous failed attempt to use standard `localStorage`, which broke due to browser data limits on serialized workspace assets.
 
 **Implementation Steps:**
-1. **Firestore Offline Persistence:** Call `enableIndexedDbPersistence(db)` during Firebase initialization in the frontend to cache the database locally.
+1. **Firestore Offline Persistence:** Call `enableIndexedDbPersistence(db)` during Firebase initialization in the frontend to cache the database locally. This correctly bypasses `localStorage` size limits.
 2. **PWA Manifest:** Create a `manifest.json` defining the app's icons, theme colors, and standalone display mode to allow mobile installation.
 3. **Service Worker:** Use Vite's `vite-plugin-pwa` to register a service worker that caches the React application shell, CSS, and critical Google Fonts.
 4. **Offline Sync Queue:** For Google Workspace API calls (Calendar, Meet, Docs), implement a local queue using IndexedDB. If the user creates a task while offline, Firestore will handle its own sync, but the Google API actions must be stored locally and executed sequentially by a background sync listener once the `window.ononline` event fires.
@@ -57,3 +65,20 @@ This document outlines four potential future improvements for the Google Workspa
 2. **Shader Gallery:** Build a selector component allowing users to choose from multiple WebGL shader variants (e.g., Aurora, Particles, Wave) for the login and dashboard backgrounds.
 3. **Dynamic CSS Variables:** Extend the `ThemeInjector` to support custom primary and accent colors driven by user selection.
 4. **Performance Tuning:** Introduce a "Performance Mode" toggle that disables all WebGL shaders and heavy animations for low-end devices or extended battery life.
+
+## 7. Advanced Voice Memo & Multi-Language Transcription
+**Description:** Expand the Voice Memo feature in the task form to support automatic multi-language detection, continuous background listening, and audio file attachments.
+
+**Implementation Steps:**
+1. **Audio Storage:** Update the transcription flow to save the raw audio blobs into Firebase Cloud Storage before processing. Store the resulting `audioUrl` in the Firestore task document.
+2. **Contextual AI Prompts:** Upgrade the server's Gemini prompt to automatically detect the spoken language, provide the transcription, and translate it into the user's preferred language.
+3. **Playback UI:** Add a mini audio player component to the `TaskItem` view that allows users to listen to the original voice memo attached to their tasks.
+
+## 8. Robust Database Direct Sync & Conflict Resolution
+**Description:** Implement a mature, operational transform-based direct syncing mechanism. This addresses the failed "direct database syncing" attempt which was rolled back after encountering frequent conflict errors during high-frequency concurrent writes.
+
+**Implementation Steps:**
+1. **Timestamp Vectoring:** Introduce logical clock vectors alongside standard timestamps in the `tasks` schema to better track the sequence of concurrent edits.
+2. **Conflict Resolution Strategy:** Implement a 'last-writer-wins' strategy for standard text fields (title, description), but a more granular merging strategy for array fields (like tags or assignee lists) using Firestore `arrayUnion` and `arrayRemove`.
+3. **Queue-Based Execution:** Instead of syncing directly on the main thread, move synchronization requests to a web worker that batches updates to Firestore every 3-5 seconds, significantly reducing the probability of race conditions.
+4. **User Feedback UI:** Add a visual indicator in the top right corner of the dashboard that shows active syncing status ("Syncing...", "Saved to Cloud", or "Conflict Detected - Click to Resolve").

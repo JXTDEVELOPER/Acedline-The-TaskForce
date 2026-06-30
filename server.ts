@@ -3,6 +3,7 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
 import dotenv from "dotenv";
+import twilio from "twilio";
 
 dotenv.config();
 
@@ -431,6 +432,45 @@ app.post("/api/generate-email", async (req, res) => {
   }
 });
 
+app.post("/api/generate-ai-brief", async (req, res) => {
+  try {
+    const { pendingTasks } = req.body;
+    if (!Array.isArray(pendingTasks)) {
+      return res.status(400).json({ error: "Pending tasks array is required" });
+    }
+
+    const ai = getAiClient();
+    const systemInstruction = `You are a helpful and proactive AI Chief of Staff.
+The user has asked for a brief summary of their pending tasks and meetings.
+Provide a short, concise, and friendly summary of what is on their plate based on the provided list. 
+Group similar tasks if possible.
+End the summary by asking if they would like help creating a step-by-step action plan for any of these tasks.`;
+
+    const tasksList = pendingTasks.map((t: any) => `- ${t.title} (Due: ${t.dueDate || 'No Date'}, Priority: ${t.priority})`).join('\n');
+    const prompt = `Here are my pending tasks:\n${tasksList || "No pending tasks."}\nPlease give me a brief summary.`;
+
+    const response = await callGeminiWithRetry(() =>
+      ai.models.generateContent({
+        model: "gemini-3.5-flash",
+        contents: prompt,
+        config: {
+          systemInstruction: {
+            role: "system",
+            parts: [{ text: systemInstruction }]
+          }
+        }
+      })
+    );
+
+    return res.json({ text: response.text });
+  } catch (error: any) {
+    console.error("AI Brief Generation Error:", error);
+    return res.status(500).json({
+      error: getFriendlyErrorMessage(error),
+    });
+  }
+});
+
 app.post("/api/generate-action-plan", async (req, res) => {
   try {
     const { taskTitle, taskDescription } = req.body;
@@ -608,6 +648,49 @@ app.post("/api/transcribe-audio", express.raw({ type: "audio/webm", limit: "10mb
   } catch (error: any) {
     console.error("Transcribe audio error:", error);
     return res.status(500).json({ error: getFriendlyErrorMessage(error) });
+  }
+});
+
+// API endpoint to send WhatsApp alerts for critical tasks
+app.post("/api/send-whatsapp-alert", async (req, res) => {
+  try {
+    const { taskTitle, taskDueDate, priority, userWhatsAppNumber } = req.body;
+    if (!taskTitle) {
+      return res.status(400).json({ error: "Task title is required" });
+    }
+    if (!userWhatsAppNumber) {
+      return res.status(400).json({ error: "User WhatsApp number is required" });
+    }
+
+    const { TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_WHATSAPP_NUMBER } = process.env;
+
+    if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_WHATSAPP_NUMBER) {
+      return res.status(503).json({ 
+        error: "Twilio credentials are not fully configured in settings. Please add TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_WHATSAPP_NUMBER to your secrets." 
+      });
+    }
+
+    const client = twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
+    
+    // Ensure the numbers are formatted correctly (must start with "whatsapp:")
+    const formattedTo = userWhatsAppNumber.startsWith("whatsapp:") 
+      ? userWhatsAppNumber 
+      : `whatsapp:${userWhatsAppNumber}`;
+
+    const formattedFrom = TWILIO_WHATSAPP_NUMBER.startsWith("whatsapp:")
+      ? TWILIO_WHATSAPP_NUMBER
+      : `whatsapp:${TWILIO_WHATSAPP_NUMBER}`;
+
+    const message = await client.messages.create({
+      body: `🚨 *CRITICAL TASK ALERT* 🚨\n\n*Task*: ${taskTitle}\n*Due*: ${taskDueDate || "No date specified"}\n*Priority*: ${priority ? priority.toUpperCase() : "HIGH"}\n\nPlease take action on this task immediately in your Taskspace!`,
+      from: formattedFrom,
+      to: formattedTo
+    });
+
+    return res.json({ success: true, messageId: message.sid });
+  } catch (error: any) {
+    console.error("WhatsApp alert error:", error);
+    return res.status(500).json({ error: error.message || "Failed to send WhatsApp alert" });
   }
 });
 

@@ -1,7 +1,10 @@
-import React from 'react';
-import { Target, GraduationCap, CalendarDays, Columns, Settings, PenTool, Sparkles, PlusCircle } from 'lucide-react';
-import { motion } from 'motion/react';
+import React, { useState } from 'react';
+import { Target, GraduationCap, CalendarDays, Columns, Settings, PenTool, Sparkles, PlusCircle, X, Bot } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import Markdown from 'react-markdown';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+
+import { getCached, setCached } from "../lib/cache";
 
 interface WelcomeDashboardProps {
   user: any;
@@ -11,6 +14,10 @@ interface WelcomeDashboardProps {
 }
 
 export function WelcomeDashboard({ user, tasks, setActiveView, todayFormatted }: WelcomeDashboardProps) {
+  const [isGeneratingBrief, setIsGeneratingBrief] = useState(false);
+  const [aiBrief, setAiBrief] = useState("");
+  const [showBriefModal, setShowBriefModal] = useState(false);
+
   const pendingTasksCount = tasks.filter(t => !t.completed).length;
   const completedTasksCount = tasks.filter(t => t.completed).length;
   
@@ -19,19 +26,56 @@ export function WelcomeDashboard({ user, tasks, setActiveView, todayFormatted }:
     { name: 'Pending', value: pendingTasksCount, color: '#f43f5e' } // Rose 500
   ];
 
+  const handleGenerateBrief = async () => {
+    setIsGeneratingBrief(true);
+    setShowBriefModal(true);
+    setAiBrief("");
+    try {
+      const pendingTasks = tasks.filter(t => !t.completed);
+      const cacheKey = `ai-brief-${pendingTasks.map(t => t.id).join('-')}`;
+      let brief = getCached<string>(cacheKey);
+
+      if (!brief) {
+        const res = await fetch("/api/generate-ai-brief", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ pendingTasks })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Failed to generate brief");
+        brief = data.text;
+        if (brief) setCached(cacheKey, brief);
+      }
+      setAiBrief(brief as string);
+    } catch (e: any) {
+      setAiBrief(`Error generating brief: ${e.message}`);
+    } finally {
+      setIsGeneratingBrief(false);
+    }
+  };
+
   return (
     <div className="flex-1 overflow-y-auto p-4 md:p-10 lg:p-12">
       <div className="mx-auto max-w-4xl">
-        <header className="mb-10 pb-6 border-b border-natural-border">
-          <div className="font-mono text-[10px] tracking-widest text-[#A09489] font-bold">
-            {todayFormatted}
+        <header className="mb-10 pb-6 border-b border-natural-border flex justify-between items-end">
+          <div>
+            <div className="font-mono text-[10px] tracking-widest text-[#A09489] font-bold">
+              {todayFormatted}
+            </div>
+            <h1 className="mt-2 text-4xl font-light tracking-tight text-natural-text-dark">
+              Welcome back, {user?.displayName?.split(' ')[0] || 'User'}
+            </h1>
+            <p className="mt-2 text-natural-text-secondary text-lg">
+              You have <span className="font-semibold text-natural-accent">{pendingTasksCount}</span> pending tasks across your workspaces.
+            </p>
           </div>
-          <h1 className="mt-2 text-4xl font-light tracking-tight text-natural-text-dark">
-            Welcome back, {user?.displayName?.split(' ')[0] || 'User'}
-          </h1>
-          <p className="mt-2 text-natural-text-secondary text-lg">
-            You have <span className="font-semibold text-natural-accent">{pendingTasksCount}</span> pending tasks across your workspaces.
-          </p>
+          <button
+            onClick={handleGenerateBrief}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#b400ff]/10 text-[#b400ff] hover:bg-[#b400ff]/20 transition-colors font-medium text-sm"
+          >
+            <Bot className="h-4 w-4" />
+            AI Brief
+          </button>
         </header>
 
         {/* Task Progress Section */}
@@ -104,6 +148,10 @@ export function WelcomeDashboard({ user, tasks, setActiveView, todayFormatted }:
                   <div className="h-1.5 w-1.5 rounded-full bg-[#b400ff]" />
                   <span><strong>Smart Task Autofill:</strong> AI evaluates priority and context automatically.</span>
                 </li>
+                <li className="flex items-center gap-2 text-sm text-natural-text-dark">
+                  <div className="h-1.5 w-1.5 rounded-full bg-[#b400ff]" />
+                  <span><strong>WhatsApp Reminders:</strong> Get instant alerts for high-priority critical tasks.</span>
+                </li>
               </ul>
             </div>
             <button 
@@ -166,6 +214,70 @@ export function WelcomeDashboard({ user, tasks, setActiveView, todayFormatted }:
         </div>
 
       </div>
+      
+      <AnimatePresence>
+        {showBriefModal && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white dark:bg-[#0b0b0c] border border-natural-border p-6 rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[80vh]"
+            >
+              <div className="flex justify-between items-center mb-4">
+                <div className="flex items-center gap-2">
+                  <Bot className="h-5 w-5 text-[#b400ff]" />
+                  <h3 className="text-xl font-semibold text-natural-text-dark">AI Brief</h3>
+                </div>
+                <button 
+                  onClick={() => setShowBriefModal(false)}
+                  className="text-natural-text-secondary hover:text-natural-text-dark transition-colors"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto mb-4">
+                {isGeneratingBrief ? (
+                  <div className="flex flex-col items-center justify-center py-12 gap-3 text-natural-text-secondary">
+                    <Sparkles className="h-8 w-8 text-[#b400ff] animate-pulse" />
+                    <p className="text-sm">Analyzing your tasks...</p>
+                  </div>
+                ) : (
+                  <div className="prose prose-sm dark:prose-invert max-w-none text-natural-text-dark">
+                    <Markdown>{aiBrief}</Markdown>
+                  </div>
+                )}
+              </div>
+              
+              {!isGeneratingBrief && (
+                <div className="pt-4 border-t border-natural-border flex gap-3 flex-col sm:flex-row">
+                  <button 
+                    onClick={() => {
+                      setShowBriefModal(false);
+                      setActiveView("self-directed");
+                    }}
+                    className="flex-1 bg-[#b400ff] text-white rounded-xl py-2 font-medium text-sm hover:bg-[#a000e6] transition-colors"
+                  >
+                    Need an Action Plan? Go to AI Coach
+                  </button>
+                  <button 
+                    onClick={() => setShowBriefModal(false)}
+                    className="flex-1 bg-natural-panel border border-natural-border text-natural-text-dark rounded-xl py-2 font-medium text-sm hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                  >
+                    Close
+                  </button>
+                </div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
