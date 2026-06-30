@@ -182,19 +182,6 @@ GOOGLE_CLIENT_SECRET=
 
 ---
 
-# 📸 Screenshots
-
-Add screenshots in `/docs`:
-
-- login.png
-- dashboard.png
-- calendar.png
-- kanban.png
-- ai-assistant.png
-- settings.png
-
----
-
 # 🚀 Deployment
 
 Deploy frontend and backend to Google Cloud.
@@ -211,19 +198,6 @@ Ensure Google APIs are enabled and environment variables are configured.
 - WhatsApp Alerts
 - Push Notifications
 - Mobile App
-
----
-
-# 👥 Team
-
-Add team members here.
-
----
-
-# 📄 License
-
-MIT License
-
 
 ---
 
