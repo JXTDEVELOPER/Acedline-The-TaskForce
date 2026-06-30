@@ -239,65 +239,65 @@ MIT License
 
 ## 🏠 Welcome Dashboard
 
-![Welcome Dashboard](docs/images/welcomepage.png)
+![Welcome Dashboard](docs/images/welcome-dashboard.png)
 
 ---
 
 ## 🤖 AI Brief
 
-![AI Brief](docs/images/Ai%20Breif.png)
+![AI Brief](docs/images/ai-brief.png)
 
 ---
 
 ## 📅 Event Management
 
-![Event Management](docs/images/Event%20Management%20page.png)
+![Event Management](docs/images/event-management.png)
 
 ---
 
 ## ➕ Create Task / Meeting
 
-![Create Task](docs/images/popup%20to%20add%20new%20task%20or%20meeting.png)
+![Create Task](docs/images/calendar-task-dialog.png)
 
 ---
 
 ## 🗓️ Calendar Dashboard
 
-![Calendar Dashboard](docs/images/Calander%20dashboard.png)
+![Calendar Dashboard](docs/images/calendar-dashboard.png)
 
 ### Add Task Directly from Calendar
 
-![Add Task](docs/images/add%20evnt%20directlt%20from%20the%20calander.png)
+![Add Task](docs/images/calendar-task-dialog.png)
 
 ### Calendar Event Details
 
-![Calendar Details](docs/images/event%20deatails%20popup%20when%20clicked%20on%20it%20in%20calander.png)
+![Calendar Details](docs/images/calendar-event-details.png)
 
 ---
 
 ## 🎯 Self-Directed Activity
 
-![Self Directed Activity](docs/images/Self%20directed%20activity%20for%20personal%20space.png)
+![Self Directed Activity](docs/images/self-directed-activity.png)
 
 ---
 
 ## 📋 Kanban Board
 
-![Kanban](docs/images/kanban%20board.png)
+![Kanban](docs/images/kanban-board.png)
 
 ---
 
 ## 🎓 Google Classroom
 
-![Google Classroom](docs/images/google%20classrom%20manager.png)
+![Google Classroom](docs/images/google-classroom.png)
 
 ---
 
 ## ⚙️ Settings
 
-![Settings 1](docs/images/settings%201.png)
+![Settings 1](docs/images/Settings-1.png)
 
-![Settings 2](docs/images/settings%202.png)
+![Settings 2](docs/images/Setting-2.png)
 
 ---
 
@@ -305,11 +305,11 @@ MIT License
 
 ### Version History
 
-![Version History](docs/images/version%20history.png)
+![Version History](docs/images/version-history.png)
 
 ### Debug Dashboard
 
-![Debug Dashboard](docs/images/debug%20page.png)
+![Debug Dashboard](docs/images/debug-dashboard.png)
 
 ---
 
