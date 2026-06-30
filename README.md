@@ -1,288 +1,225 @@
 # 🚀 TaskSpace – AI-Powered Google Workspace Productivity Companion
 
-> **TaskSpace** is an AI-powered productivity companion built for the **Vibe2Ship Hackathon – Problem Statement 1: The Last-Minute Life Saver**.
->
-> Instead of acting as a simple to-do list, TaskSpace helps users **plan, prioritize, organize, and complete work before deadlines are missed** through Google Workspace integration and AI assistance.
+> **TaskSpace** transforms Google Workspace into an intelligent productivity companion that helps users plan, prioritize, and complete work before deadlines are missed.
+
+![Hackathon](https://img.shields.io/badge/Vibe2Ship-Problem%201-blue)
+![React](https://img.shields.io/badge/React-19-61DAFB)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6)
+![Firebase](https://img.shields.io/badge/Firebase-Enabled-FFCA28)
+![Google%20Cloud](https://img.shields.io/badge/Google%20Cloud-Deployed-4285F4)
+![Gemini](https://img.shields.io/badge/Gemini-AI-8E75FF)
 
 ---
 
-## ✨ Features
+# 📖 Overview
 
-- 🔐 Google Authentication (Firebase)
-- ✅ Smart Task Management
-- 📅 Google Calendar Integration
-- ☑️ Google Tasks Sync
-- 📧 Gmail Draft Generation
-- 📄 Google Docs Generation
-- 📊 Google Sheets Generation
-- 📽️ Google Slides Generation
-- 📋 Google Forms Generation
-- 🎓 Google Classroom Integration
-- 🎥 Google Meet Integration
-- 🤖 Gemini-powered productivity assistance
-- 📌 Kanban Board
-- 📆 Calendar Dashboard
-- ⚙️ Settings & Preferences
+TaskSpace is an AI-powered productivity platform built for the **Vibe2Ship Hackathon – Problem Statement 1: The Last-Minute Life Saver**.
+
+Instead of acting as another reminder application, TaskSpace combines Google Workspace services with AI assistance to help users organize, schedule, collaborate, and execute work efficiently.
 
 ---
 
-# Problem Statement
+# ✨ Core Features
 
-Modern productivity tools rely heavily on passive reminders that are easy to ignore. TaskSpace helps users organize work across Google Workspace and provides AI-assisted productivity features to reduce the chances of missing important deadlines.
-
----
-
-# System Architecture
-
-```mermaid
-graph TD
-
-User --> React
-
-React --> FirebaseAuth
-React --> Firestore
-
-React --> Backend
-
-Backend --> Gemini
-
-Backend --> Calendar
-Backend --> GoogleTasks
-Backend --> Gmail
-Backend --> Docs
-Backend --> Sheets
-Backend --> Slides
-Backend --> Forms
-Backend --> Classroom
-Backend --> Meet
-```
+- Google Sign-In
+- Smart Task Management
+- Kanban Board
+- Google Calendar Integration
+- Google Tasks Synchronization
+- Gmail Draft Generation
+- Google Docs Generation
+- Google Sheets Generation
+- Google Slides Generation
+- Google Forms Generation
+- Google Classroom Integration
+- Google Meet Integration
+- Gemini AI Assistant
+- Responsive Dashboard
+- Settings & Preferences
 
 ---
 
-# Application Workflow
+# 🏗️ High Level Architecture
 
 ```mermaid
 flowchart LR
+    U[User]
+    FE[React Frontend]
+    BE[Node Backend]
+    FA[Firebase Authentication]
+    FS[Firestore]
+    GM[Gemini AI]
+    GC[Google Calendar]
+    GT[Google Tasks]
+    GD[Google Docs]
+    GS[Google Sheets]
+    GL[Google Slides]
+    GF[Google Forms]
+    GG[Gmail]
+    GCL[Google Classroom]
+    MEET[Google Meet]
 
-Login --> Dashboard
+    U --> FE
+    FE --> FA
+    FE --> FS
+    FE --> BE
 
-Dashboard --> Tasks
-
-Dashboard --> Calendar
-
-Dashboard --> AI
-
-AI --> Workspace
-
-Workspace --> Docs
-Workspace --> Gmail
-Workspace --> Slides
-Workspace --> Sheets
-Workspace --> Forms
-Workspace --> Meet
+    BE --> GM
+    BE --> GC
+    BE --> GT
+    BE --> GD
+    BE --> GS
+    BE --> GL
+    BE --> GF
+    BE --> GG
+    BE --> GCL
+    BE --> MEET
 ```
 
 ---
 
-# Google Workspace Flow
+# 🔄 Application Flow
 
 ```mermaid
 flowchart TD
-
-Task
-
--->
-
-Firestore
-
--->
-
-Google Calendar
-
--->
-
-Google Tasks
-
--->
-
-Workspace Services
-
--->
-
-Docs
-
--->
-
-Sheets
-
--->
-
-Slides
-
--->
-
-Forms
-
--->
-
-Meet
-
--->
-
-Gmail
+    A[Login] --> B[Dashboard]
+    B --> C[Create Task]
+    C --> D[Save to Firestore]
+    D --> E[Sync Calendar]
+    D --> F[Sync Google Tasks]
+    B --> G[Gemini Assistant]
+    G --> H[Workspace Actions]
 ```
 
 ---
 
-# AI Workflow
+# 🤖 AI Workflow
 
 ```mermaid
 sequenceDiagram
+    participant User
+    participant Frontend
+    participant Backend
+    participant Gemini
 
-User->>Frontend: Request AI Assistance
-
-Frontend->>Backend: Send Context
-
-Backend->>Gemini: Generate Response
-
-Gemini-->>Backend: AI Output
-
-Backend-->>Frontend: Structured Result
-
-Frontend-->>User: Display AI Assistance
+    User->>Frontend: Ask AI
+    Frontend->>Backend: Send request
+    Backend->>Gemini: Generate response
+    Gemini-->>Backend: AI output
+    Backend-->>Frontend: Structured response
+    Frontend-->>User: Display result
 ```
 
 ---
 
-# Technology Stack
+# ☁️ Google Workspace Integration
 
-| Category | Technology |
-|-----------|------------|
-| Frontend | React + TypeScript + Vite |
+```mermaid
+flowchart TD
+    T[Task] --> F[Firestore]
+    F --> C[Google Calendar]
+    F --> GT[Google Tasks]
+    F --> D[Google Docs]
+    F --> S[Google Sheets]
+    F --> SL[Google Slides]
+    F --> FM[Google Forms]
+    F --> G[Gmail]
+    F --> M[Google Meet]
+```
+
+---
+
+# 🛠️ Technology Stack
+
+| Layer | Technology |
+|------|------------|
+| Frontend | React, TypeScript, Vite |
 | Backend | Node.js |
-| Database | Firestore |
 | Authentication | Firebase Authentication |
-| AI | Google Gemini |
+| Database | Firestore |
+| AI | Gemini |
 | Cloud | Google Cloud |
 | Styling | Tailwind CSS |
-| Animation | Motion |
 | APIs | Google Workspace APIs |
 
 ---
 
-# Project Structure
+# 📂 Project Structure
 
 ```text
 src/
 ├── components/
 ├── hooks/
 ├── lib/
+├── assets/
 ├── App.tsx
-├── main.tsx
+└── main.tsx
 
 server.ts
 ```
 
 ---
 
-# Google Technologies Used
-
-- Firebase Authentication
-- Firestore
-- Google Calendar API
-- Google Tasks API
-- Gmail API
-- Google Docs API
-- Google Sheets API
-- Google Slides API
-- Google Forms API
-- Google Classroom API
-- Google Meet
-- Gemini API
-- Google Cloud
-
----
-
-# Installation
+# ⚙️ Installation
 
 ```bash
-git clone <repository>
-
-cd taskspace
-
+git clone <repo-url>
+cd project
 npm install
-
 npm run dev
 ```
 
----
-
-# Environment Variables
+# 🔐 Environment Variables
 
 ```env
 GEMINI_API_KEY=
-
 FIREBASE_API_KEY=
-
 FIREBASE_AUTH_DOMAIN=
-
 FIREBASE_PROJECT_ID=
-
 GOOGLE_CLIENT_ID=
-
 GOOGLE_CLIENT_SECRET=
 ```
 
 ---
 
-# Demo
+# 📸 Screenshots
 
-Add screenshots:
+Add screenshots in `/docs`:
 
-```
-docs/
-
-login.png
-
-dashboard.png
-
-kanban.png
-
-calendar.png
-
-workspace.png
-
-settings.png
-```
+- login.png
+- dashboard.png
+- calendar.png
+- kanban.png
+- ai-assistant.png
+- settings.png
 
 ---
 
-# Roadmap
+# 🚀 Deployment
 
-- Intelligent Deadline Risk Prediction
-- Calendar Health Analysis
+Deploy frontend and backend to Google Cloud.
+
+Ensure Google APIs are enabled and environment variables are configured.
+
+---
+
+# 🛣️ Roadmap
+
+- Deadline Risk Prediction
 - Productivity Analytics
+- Calendar Health
 - WhatsApp Alerts
 - Push Notifications
-- Offline Support
-- Mobile Application
+- Mobile App
 
 ---
 
-# Contributors
+# 👥 Team
 
-Add your team members here.
+Add team members here.
 
 ---
 
-# License
+# 📄 License
 
 MIT License
-
----
-
-## ⭐ Why TaskSpace?
-
-TaskSpace combines Google Workspace services with AI-assisted productivity into a unified experience. It helps users manage tasks, collaborate through familiar Google tools, and streamline their workflow from planning to execution.
-
-Built for the **Vibe2Ship Hackathon**.
