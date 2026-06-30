@@ -163,8 +163,8 @@ server.ts
 # ⚙️ Installation
 
 ```bash
-git clone <repo-url>
-cd project
+git clone https://github.com/joshuaxavierthomas/taskspace.git
+cd taskspace
 npm install
 npm run dev
 ```
@@ -290,3 +290,9 @@ Ensure Google APIs are enabled and environment variables are configured.
 ## 📑 Sidebar Navigation
 
 ![Sidebar](docs/images/sidebar.png)
+
+---
+
+# 👤 Author
+
+**Joshua Xavier Thomas** ([joshuaxavierthomas@gmail.com](mailto:joshuaxavierthomas@gmail.com))
