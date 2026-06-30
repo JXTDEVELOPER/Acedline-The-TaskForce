@@ -223,3 +223,96 @@ Add team members here.
 # 📄 License
 
 MIT License
+
+
+---
+
+# 📸 Application Screenshots
+
+> **Note:** Place all screenshots inside `docs/images/` in your GitHub repository and update the image paths if necessary.
+
+## 🔐 Login
+
+![Login](docs/images/login.png)
+
+---
+
+## 🏠 Welcome Dashboard
+
+![Welcome Dashboard](docs/images/welcomepage.png)
+
+---
+
+## 🤖 AI Brief
+
+![AI Brief](docs/images/Ai%20Breif.png)
+
+---
+
+## 📅 Event Management
+
+![Event Management](docs/images/Event%20Management%20page.png)
+
+---
+
+## ➕ Create Task / Meeting
+
+![Create Task](docs/images/popup%20to%20add%20new%20task%20or%20meeting.png)
+
+---
+
+## 🗓️ Calendar Dashboard
+
+![Calendar Dashboard](docs/images/Calander%20dashboard.png)
+
+### Add Task Directly from Calendar
+
+![Add Task](docs/images/add%20evnt%20directlt%20from%20the%20calander.png)
+
+### Calendar Event Details
+
+![Calendar Details](docs/images/event%20deatails%20popup%20when%20clicked%20on%20it%20in%20calander.png)
+
+---
+
+## 🎯 Self-Directed Activity
+
+![Self Directed Activity](docs/images/Self%20directed%20activity%20for%20personal%20space.png)
+
+---
+
+## 📋 Kanban Board
+
+![Kanban](docs/images/kanban%20board.png)
+
+---
+
+## 🎓 Google Classroom
+
+![Google Classroom](docs/images/google%20classrom%20manager.png)
+
+---
+
+## ⚙️ Settings
+
+![Settings 1](docs/images/settings%201.png)
+
+![Settings 2](docs/images/settings%202.png)
+
+---
+
+## 🧰 Developer Tools
+
+### Version History
+
+![Version History](docs/images/version%20history.png)
+
+### Debug Dashboard
+
+![Debug Dashboard](docs/images/debug%20page.png)
+
+---
+
+## 📑 Sidebar Navigation
+
+![Sidebar](docs/images/sidebar.png)
